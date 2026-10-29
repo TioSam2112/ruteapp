@@ -1,0 +1,7 @@
+packages:
+  - "rutea-facturation"
+  - "rutea-fulfillment"
+allowBuilds:
+  '@firebase/util': true
+  protobufjs: true
+  unrs-resolver: true
