@@ -1,3 +1,32 @@
+export type ItemPickingStatus =
+  | "PENDIENTE_REVISION"
+  | "ALISTADO"
+  | "PENDIENTE_LLEGADA"
+  | "AGOTADO";
+
+export interface PickingAuditLog {
+  uid: string;
+  userName: string;
+  action:
+    | ItemPickingStatus
+    | "NOTA_EDITADA"
+    | "CANTIDAD_AJUSTADA"
+    | "OBS_GENERAL_CHECK";
+  timestamp: string;
+}
+
+export interface PickingAuditUser {
+  uid: string;
+  userName: string;
+}
+
+export interface OrderItemPickingPatch {
+  pickingStatus?: ItemPickingStatus;
+  cantidadAlistada?: number;
+  pickerNote?: string;
+  action?: PickingAuditLog["action"];
+}
+
 export interface OrderItem {
   id_producto: string;
   sku: string;
@@ -7,6 +36,10 @@ export interface OrderItem {
   unidadMedida: string;
   observationItem?: string;
   subtotal: number;
+  pickingStatus?: ItemPickingStatus;
+  cantidadAlistada?: number;
+  pickerNote?: string;
+  lastPickedBy?: PickingAuditLog;
 }
 
 export interface ClientOrderData {
@@ -34,6 +67,9 @@ export interface Order {
   vendedorNombre?: string;
   items: OrderItem[];
   generalObservation?: string;
+  generalObservationChecked?: boolean;
+  generalObservationAudit?: PickingAuditLog;
+  pickingProgress?: number;
   totalBase: number;
   totalTax: number;
   total: number;
