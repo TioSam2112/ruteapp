@@ -6,12 +6,19 @@ import { LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useState } from "react";
 import { logout } from "@/services/auth.service";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { ADMIN_NAV_GROUPS } from "@/constants/navigation";
+import {
+  ADMIN_NAV_GROUPS,
+  FACTURATION_NAV_GROUPS,
+} from "@/constants/navigation";
 
 export function Sidebar() {
   const [isExpanded, setIsExpanded] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  const navGroups = pathname.startsWith("/facturation")
+    ? FACTURATION_NAV_GROUPS
+    : ADMIN_NAV_GROUPS;
 
   const handleLogout = async () => {
     await logout();
@@ -19,7 +26,9 @@ export function Sidebar() {
   };
 
   const isActive = (href: string) =>
-    href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
+    href === "/admin" || href === "/facturation"
+      ? pathname === href
+      : pathname.startsWith(href);
 
   return (
     <aside
@@ -50,7 +59,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-2 py-4">
-        {ADMIN_NAV_GROUPS.map((group) => (
+        {navGroups.map((group) => (
           <div key={group.title} className="flex flex-col gap-0.5">
             {isExpanded && (
               <span className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">

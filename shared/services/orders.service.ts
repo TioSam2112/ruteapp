@@ -19,6 +19,7 @@ import type {
   Order,
   OrderItem,
   OrderItemPickingPatch,
+  OrderReliquidationSummary,
   PickingAuditLog,
   PickingAuditUser,
 } from "../types/order";
@@ -27,6 +28,10 @@ const ORDERS_COLLECTION = "orders";
 
 function mapOrderDoc(id: string, data: unknown): Order {
   return { id, ...(data as Omit<Order, "id">) };
+}
+
+function roundCurrency(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 function isItemResolved(status?: ItemPickingStatus): boolean {
@@ -39,6 +44,62 @@ function computePickingProgress(items: readonly OrderItem[]): number {
     isItemResolved(item.pickingStatus)
   ).length;
   return Math.round((resolvedCount / items.length) * 100);
+}
+
+function resolvePickedQuantity(item: OrderItem): number {
+  if (item.pickingStatus === "AGOTADO") {
+    return 0;
+  }
+  if (item.cantidadAlistada !== undefined) {
+    return Number(item.cantidadAlistada);
+  }
+  return Number(item.cantidad);
+}
+
+function buildReliquidationSummary(
+  order: Pick<Order, "items" | "total" | "initialTotal" | "reliquidation">,
+  auditUser?: PickingAuditUser,
+  timestamp?: string
+): OrderReliquidationSummary {
+  const computedInitial = roundCurrency(
+    order.items.reduce(
+      (acc, item) =>
+        acc +
+        roundCurrency(Number(item.cantidad) * Number(item.precioVentaAtSale)),
+      0
+    )
+  );
+
+  const totalOriginal =
+    order.initialTotal !== undefined
+      ? Number(order.initialTotal)
+      : order.reliquidation?.totalOriginal !== undefined
+        ? Number(order.reliquidation.totalOriginal)
+        : computedInitial > 0
+          ? computedInitial
+          : Number(order.total);
+
+  const totalAlistado = roundCurrency(
+    order.items.reduce((acc, item) => {
+      const pickedQty = resolvePickedQuantity(item);
+      return acc + roundCurrency(pickedQty * Number(item.precioVentaAtSale));
+    }, 0)
+  );
+
+  const diferencia = roundCurrency(totalAlistado - totalOriginal);
+  const closedByUid = auditUser?.uid ?? order.reliquidation?.closedByUid;
+  const closedByName =
+    auditUser?.userName ?? order.reliquidation?.closedByName;
+  const closedAt = timestamp ?? order.reliquidation?.closedAt;
+
+  return {
+    totalOriginal,
+    totalAlistado,
+    diferencia,
+    ...(closedByUid ? { closedByUid } : {}),
+    ...(closedByName ? { closedByName } : {}),
+    ...(closedAt ? { closedAt } : {}),
+  };
 }
 
 function sanitizeOrderItem(item: OrderItem): OrderItem {
@@ -102,6 +163,11 @@ export async function createOrder(data: CreateOrderData): Promise<Order> {
   const newDocRef = doc(collection(db, ORDERS_COLLECTION));
   const now = new Date().toISOString();
   const facturaNumber = data.facturaNumber || (await generateNextFacturaNumber());
+  const normalizedTotal = Number(data.total);
+  const initialTotal =
+    data.initialTotal !== undefined
+      ? Number(data.initialTotal)
+      : normalizedTotal;
 
   const order: Order = {
     id: newDocRef.id,
@@ -131,7 +197,9 @@ export async function createOrder(data: CreateOrderData): Promise<Order> {
       : {}),
     totalBase: Number(data.totalBase),
     totalTax: Number(data.totalTax),
-    total: Number(data.total),
+    total: normalizedTotal,
+    initialTotal,
+    ...(data.reliquidation ? { reliquidation: data.reliquidation } : {}),
     estado: data.estado || "PENDIENTE_ALISTAMIENTO",
     createdAt: now,
     updatedAt: now,
@@ -181,6 +249,31 @@ export function subscribeToFulfillmentOrders(
         .sort(
           (a, b) =>
             new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      callback(orders);
+    },
+    (err) => onError?.(err)
+  );
+}
+
+export function subscribeToSellerOrders(
+  sellerUid: string,
+  callback: (orders: Order[]) => void,
+  onError?: (error: Error) => void
+): Unsubscribe {
+  const q = query(
+    collection(db, ORDERS_COLLECTION),
+    where("id_vendedor", "==", sellerUid)
+  );
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const orders = snapshot.docs
+        .map((d) => mapOrderDoc(d.id, d.data()))
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
       callback(orders);
     },
@@ -252,7 +345,9 @@ export async function updateOrderItemPicking(
   const nextCantidadAlistada =
     updatedItemPatch.cantidadAlistada !== undefined
       ? Number(updatedItemPatch.cantidadAlistada)
-      : currentItem.cantidadAlistada ?? currentItem.cantidad;
+      : nextPickingStatus === "AGOTADO"
+        ? 0
+        : currentItem.cantidadAlistada ?? currentItem.cantidad;
 
   const nextPickerNote =
     updatedItemPatch.pickerNote !== undefined
@@ -261,6 +356,8 @@ export async function updateOrderItemPicking(
 
   const updatedItem: OrderItem = sanitizeOrderItem({
     ...currentItem,
+    cantidad: Number(currentItem.cantidad),
+    subtotal: Number(currentItem.subtotal),
     pickingStatus: nextPickingStatus,
     cantidadAlistada: nextCantidadAlistada,
     ...(nextPickerNote !== undefined ? { pickerNote: nextPickerNote } : {}),
@@ -317,14 +414,97 @@ export async function toggleGeneralObservationCheck(
 export async function completeOrderFulfillment(
   orderId: string,
   auditUser?: PickingAuditUser
-): Promise<void> {
-  void auditUser;
+): Promise<OrderReliquidationSummary> {
   const orderRef = doc(db, ORDERS_COLLECTION, orderId);
+  const snapshot = await getDoc(orderRef);
+
+  if (!snapshot.exists()) {
+    throw new Error(`La orden con ID "${orderId}" no existe.`);
+  }
+
+  const order = mapOrderDoc(snapshot.id, snapshot.data());
   const now = new Date().toISOString();
 
+  const finalizedItems = order.items.map((item) => {
+    const status: ItemPickingStatus =
+      item.pickingStatus === "AGOTADO" ? "AGOTADO" : "ALISTADO";
+    const cantidadAlistada =
+      status === "AGOTADO"
+        ? 0
+        : item.cantidadAlistada !== undefined
+          ? Number(item.cantidadAlistada)
+          : Number(item.cantidad);
+
+    return sanitizeOrderItem({
+      ...item,
+      cantidad: Number(item.cantidad),
+      subtotal: Number(item.subtotal),
+      pickingStatus: status,
+      cantidadAlistada,
+    });
+  });
+
+  const reliquidation = buildReliquidationSummary(
+    {
+      ...order,
+      items: finalizedItems,
+    },
+    auditUser,
+    now
+  );
+
   await updateDoc(orderRef, {
+    items: finalizedItems,
     estado: "ALISTADO",
     pickingProgress: 100,
+    initialTotal: reliquidation.totalOriginal,
+    reliquidation,
     updatedAt: now,
   });
+
+  return reliquidation;
+}
+
+export async function approveOrderForDelivery(
+  orderId: string,
+  sellerAudit?: PickingAuditUser
+): Promise<Order> {
+  const orderRef = doc(db, ORDERS_COLLECTION, orderId);
+  const snapshot = await getDoc(orderRef);
+
+  if (!snapshot.exists()) {
+    throw new Error(`La orden con ID "${orderId}" no existe.`);
+  }
+
+  const order = mapOrderDoc(snapshot.id, snapshot.data());
+  const now = new Date().toISOString();
+
+  const sanitizedItems = order.items.map((item) => sanitizeOrderItem(item));
+  const reliquidation = buildReliquidationSummary(
+    {
+      ...order,
+      items: sanitizedItems,
+    },
+    sellerAudit,
+    now
+  );
+
+  const nextEstado = "LISTO_PARA_REPARTO" as const;
+
+  await updateDoc(orderRef, {
+    items: sanitizedItems,
+    initialTotal: reliquidation.totalOriginal,
+    reliquidation,
+    estado: nextEstado,
+    updatedAt: now,
+  });
+
+  return {
+    ...order,
+    items: sanitizedItems,
+    initialTotal: reliquidation.totalOriginal,
+    reliquidation,
+    estado: nextEstado,
+    updatedAt: now,
+  };
 }

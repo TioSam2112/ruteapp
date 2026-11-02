@@ -5,6 +5,7 @@ import {
   Package,
   Building2,
   ReceiptText,
+  ClipboardCheck,
   Settings,
 } from "lucide-react";
 import type { ElementType } from "react";
@@ -40,12 +41,31 @@ export const ADMIN_NAV_GROUPS: readonly NavGroup[] = [
     title: "Venta & Operación",
     items: [
       { label: "Facturación (POS)", href: "/facturation", icon: ReceiptText },
+      {
+        label: "Mis Facturas / Cierre",
+        href: "/facturation/invoices",
+        icon: ClipboardCheck,
+      },
     ],
   },
   {
     title: "Configuración",
     items: [
       { label: "Configuración", href: "/admin/settings", icon: Settings },
+    ],
+  },
+] as const;
+
+export const FACTURATION_NAV_GROUPS: readonly NavGroup[] = [
+  {
+    title: "Facturación & Despacho",
+    items: [
+      { label: "Terminal POS", href: "/facturation", icon: ReceiptText },
+      {
+        label: "Mis Facturas / Cierre",
+        href: "/facturation/invoices",
+        icon: ClipboardCheck,
+      },
     ],
   },
 ] as const;

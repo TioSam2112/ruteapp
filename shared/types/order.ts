@@ -54,9 +54,19 @@ export type OrderStatus =
   | "PENDIENTE_ALISTAMIENTO"
   | "EN_ALISTAMIENTO"
   | "ALISTADO"
+  | "LISTO_PARA_REPARTO"
   | "EN_RUTA"
   | "ENTREGADO"
   | "CANCELADO";
+
+export interface OrderReliquidationSummary {
+  totalOriginal: number;
+  totalAlistado: number;
+  diferencia: number;
+  closedByUid?: string;
+  closedByName?: string;
+  closedAt?: string;
+}
 
 export interface Order {
   id: string;
@@ -73,6 +83,8 @@ export interface Order {
   totalBase: number;
   totalTax: number;
   total: number;
+  initialTotal?: number;
+  reliquidation?: OrderReliquidationSummary;
   estado: OrderStatus;
   createdAt: string;
   updatedAt: string;
