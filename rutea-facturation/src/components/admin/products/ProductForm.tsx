@@ -7,7 +7,6 @@ import {
   TrendingUp,
   Percent,
   Scale,
-  DollarSign,
   Layers,
   Barcode,
   Tag,

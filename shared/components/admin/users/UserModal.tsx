@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { UserForm } from "./UserForm";
@@ -22,15 +21,9 @@ export function UserModal({
   availableRoles,
   onSuccess,
 }: UserModalProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   useEscapeKey(isOpen, onClose);
 
-  if (!mounted || !isOpen) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
   const handleSuccess = () => {
     if (onSuccess) onSuccess();

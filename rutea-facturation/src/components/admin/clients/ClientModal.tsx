@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, UserPlus, Edit3 } from "lucide-react";
 import { ClientForm } from "@/components/admin/clients/ClientForm";
@@ -20,15 +19,9 @@ export function ClientModal({
   clientToEdit,
   onSuccess,
 }: ClientModalProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   useEscapeKey(isOpen, onClose);
 
-  if (!mounted || !isOpen) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
   const handleSuccess = () => {
     if (onSuccess) onSuccess();

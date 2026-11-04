@@ -27,18 +27,23 @@ service cloud.firestore {
       return isAuthenticated() && getUserRole() == 'delivery';
     }
 
+    function isValidUserRole(rol) {
+      return rol in ['admin', 'facturation', 'picker', 'alistador', 'delivery'];
+    }
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
     function isValidPickerOrderUpdate() {
-      return resource.data.estado in ['PENDIENTE_ALISTAMIENTO', 'EN_ALISTAMIENTO']
+      return resource.data.estado in ['PENDIENTE_ALISTAMIENTO', 'EN_ALISTAMIENTO', 'ALISTADO']
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'items',
           'pickingProgress',
           'estado',
           'generalObservationChecked',
           'generalObservationAudit',
+          'reliquidation',
           'updatedAt'
         ])
         && request.resource.data.estado in ['PENDIENTE_ALISTAMIENTO', 'EN_ALISTAMIENTO', 'ALISTADO']
@@ -59,10 +64,24 @@ service cloud.firestore {
         ));
     }
 
+    function isValidDeliveryOrderUpdate() {
+      return resource.data.estado in ['LISTO_PARA_REPARTO', 'EN_RUTA', 'ENTREGADO']
+        && request.resource.data.estado in ['LISTO_PARA_REPARTO', 'EN_RUTA', 'ENTREGADO']
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'id',
+          'facturaNumber',
+          'id_cliente',
+          'id_vendedor',
+          'createdAt'
+        ])
+        && request.resource.data.updatedAt is string;
+    }
+
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
-      allow create, update, delete: if isAdmin();
+      allow create, update: if isAdmin() && isValidUserRole(request.resource.data.rol);
+      allow delete: if isAdmin();
     }
 
     match /routes/{document=**} {
@@ -84,7 +103,10 @@ service cloud.firestore {
     match /orders/{orderId} {
       allow read: if isAuthenticated() && (isAdmin() || isFacturation() || isPicker() || isDelivery());
       allow create: if isAdmin() || isFacturation();
-      allow update: if isAdmin() || isFacturation() || (isPicker() && isValidPickerOrderUpdate());
+      allow update: if isAdmin()
+        || isFacturation()
+        || (isPicker() && isValidPickerOrderUpdate())
+        || (isDelivery() && isValidDeliveryOrderUpdate());
       allow delete: if isAdmin() || isFacturation();
     }
 

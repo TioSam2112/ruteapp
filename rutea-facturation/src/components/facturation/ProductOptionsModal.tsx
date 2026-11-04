@@ -27,19 +27,16 @@ export function ProductOptionsModal({
   onClose,
   onConfirm,
 }: ProductOptionsModalProps) {
-  const [mounted, setMounted] = useState(false);
   const [cantidad, setCantidad] = useState<number>(1);
   const [precio, setPrecio] = useState<number>(0);
   const [observacion, setObservacion] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
-  const cantidadInputRef = useRef<HTMLInputElement>(null);
+  const syncKey = `${isOpen}-${product?.id ?? ""}-${initialItem?.id_producto ?? ""}-${initialItem?.cantidad ?? ""}-${initialItem?.precioVentaAtSale ?? ""}-${initialItem?.observationItem ?? ""}`;
+  const [prevSyncKey, setPrevSyncKey] = useState(syncKey);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
+  if (syncKey !== prevSyncKey) {
+    setPrevSyncKey(syncKey);
     if (product) {
       if (initialItem) {
         setCantidad(initialItem.cantidad);
@@ -52,7 +49,9 @@ export function ProductOptionsModal({
       }
       setError(null);
     }
-  }, [product, initialItem, isOpen]);
+  }
+
+  const cantidadInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -66,7 +65,7 @@ export function ProductOptionsModal({
 
   useEscapeKey(isOpen, onClose);
 
-  if (!mounted || !isOpen || !product) return null;
+  if (!isOpen || !product || typeof document === "undefined") return null;
 
   const allowsDecimals = product.permiteDecimales;
 
