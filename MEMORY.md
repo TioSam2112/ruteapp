@@ -49,7 +49,7 @@ An invoice passes through all 3 monorepo modules under a single Firestore docume
 - [x] **Phase 1:** Create `/AGENTS.md` and `/MEMORY.md`, and centralize `/.agents/skills/` at the root.
 - [x] **Phase 2:** Unify the PNPM Workspace (remove duplicate `pnpm-lock.yaml` and `pnpm-workspace.yaml` files from sub-apps and clean up redundant `auth` re-exports).
 - [x] **Phase 3:** Extract duplicated code (`Tooltip`, `useEscapeKey`, and the entire admin `users` module) into `@rutea/shared`.
-- [ ] **Phase 4:** Internally modularize `shared/services/orders.service.ts` into domain-specific submodules.
+- [x] **Phase 4:** Internally modularize `shared/services/orders.service.ts` into domain-specific submodules (`shared/services/orders/`: `orders.helpers`, `orders.picking.helpers`, `orders.queries.service`, `orders.facturation.service`, `orders.fulfillment.service`, `orders.fulfillment.complete.service`, `index`; `orders.service.ts` is now a re-export, all files < 150 lines).
 - [ ] **Phase 5:** Break down large components in `rutea-facturation` (`PosInterface`, `InvoiceComparisonDetail`, `PosReceiptPrint`, `SellerInvoicesList`).
 - [ ] **Phase 6:** Break down large components in `rutea-fulfillment` (`InvoicePickingDetail`, `PickingItemRow`, `InvoiceQueueList`).
 - [ ] **Phase 7:** Audit `firestore.rules`, composite indexes, and global build validation.
