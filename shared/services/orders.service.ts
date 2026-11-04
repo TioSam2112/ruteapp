@@ -12,7 +12,7 @@ import {
   onSnapshot,
   type Unsubscribe,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { auth, db } from "./firebase";
 import type {
   CreateOrderData,
   ItemPickingStatus,
@@ -331,7 +331,7 @@ export async function updateOrderItemPicking(
   }
 
   const lastPickedBy: PickingAuditLog = {
-    uid: auditUser.uid,
+    uid: auth.currentUser?.uid || auditUser.uid,
     userName: auditUser.userName,
     action: resolvedAction,
     timestamp: now,
@@ -370,11 +370,27 @@ export async function updateOrderItemPicking(
 
   const pickingProgress = computePickingProgress(updatedItems);
   const nextEstado = "EN_ALISTAMIENTO" as const;
+  const currentAuthUid = auth.currentUser?.uid;
+  const shouldSyncObsAuditUid =
+    Boolean(order.generalObservationAudit) &&
+    Boolean(currentAuthUid) &&
+    order.generalObservationAudit?.uid !== currentAuthUid;
+  const syncedObsAudit: PickingAuditLog | undefined =
+    shouldSyncObsAuditUid && order.generalObservationAudit && currentAuthUid
+      ? {
+          uid: currentAuthUid,
+          userName:
+            auditUser.userName || order.generalObservationAudit.userName,
+          action: "OBS_GENERAL_CHECK",
+          timestamp: order.generalObservationAudit.timestamp || now,
+        }
+      : undefined;
 
   await updateDoc(orderRef, {
     items: updatedItems,
     pickingProgress,
     estado: nextEstado,
+    ...(syncedObsAudit ? { generalObservationAudit: syncedObsAudit } : {}),
     updatedAt: now,
   });
 
@@ -383,6 +399,7 @@ export async function updateOrderItemPicking(
     items: updatedItems,
     pickingProgress,
     estado: nextEstado,
+    ...(syncedObsAudit ? { generalObservationAudit: syncedObsAudit } : {}),
     updatedAt: now,
   };
 }
@@ -396,7 +413,7 @@ export async function toggleGeneralObservationCheck(
   const now = new Date().toISOString();
 
   const generalObservationAudit: PickingAuditLog = {
-    uid: auditUser.uid,
+    uid: auth.currentUser?.uid || auditUser.uid,
     userName: auditUser.userName,
     action: "OBS_GENERAL_CHECK",
     timestamp: now,
@@ -424,6 +441,14 @@ export async function completeOrderFulfillment(
 
   const order = mapOrderDoc(snapshot.id, snapshot.data());
   const now = new Date().toISOString();
+  const currentAuthUid = auth.currentUser?.uid;
+  const resolvedAuditUser: PickingAuditUser | undefined =
+    auditUser || currentAuthUid
+      ? {
+          uid: currentAuthUid || auditUser?.uid || "operador-sesion",
+          userName: auditUser?.userName || "Alistador",
+        }
+      : undefined;
 
   const finalizedItems = order.items.map((item) => {
     const status: ItemPickingStatus =
@@ -434,6 +459,16 @@ export async function completeOrderFulfillment(
         : item.cantidadAlistada !== undefined
           ? Number(item.cantidadAlistada)
           : Number(item.cantidad);
+    const lastPickedBy: PickingAuditLog | undefined =
+      item.lastPickedBy ??
+      (resolvedAuditUser
+        ? {
+            uid: resolvedAuditUser.uid,
+            userName: resolvedAuditUser.userName,
+            action: status,
+            timestamp: now,
+          }
+        : undefined);
 
     return sanitizeOrderItem({
       ...item,
@@ -441,6 +476,7 @@ export async function completeOrderFulfillment(
       subtotal: Number(item.subtotal),
       pickingStatus: status,
       cantidadAlistada,
+      ...(lastPickedBy ? { lastPickedBy } : {}),
     });
   });
 
@@ -449,16 +485,31 @@ export async function completeOrderFulfillment(
       ...order,
       items: finalizedItems,
     },
-    auditUser,
+    resolvedAuditUser,
     now
   );
+
+  const shouldSyncObsAuditUid =
+    Boolean(order.generalObservationAudit) &&
+    Boolean(currentAuthUid) &&
+    order.generalObservationAudit?.uid !== currentAuthUid;
+  const syncedObsAudit: PickingAuditLog | undefined =
+    shouldSyncObsAuditUid && order.generalObservationAudit && currentAuthUid
+      ? {
+          uid: currentAuthUid,
+          userName:
+            resolvedAuditUser?.userName ||
+            order.generalObservationAudit.userName,
+          action: "OBS_GENERAL_CHECK",
+          timestamp: order.generalObservationAudit.timestamp || now,
+        }
+      : undefined;
 
   await updateDoc(orderRef, {
     items: finalizedItems,
     estado: "ALISTADO",
     pickingProgress: 100,
-    initialTotal: reliquidation.totalOriginal,
-    reliquidation,
+    ...(syncedObsAudit ? { generalObservationAudit: syncedObsAudit } : {}),
     updatedAt: now,
   });
 
