@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { UserForm } from "@/components/admin/users/UserForm";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
-import type { UserProfile } from "@/types/auth";
+import type { UserProfile } from "@rutea/shared";
 
 interface UserModalProps {
   isOpen: boolean;

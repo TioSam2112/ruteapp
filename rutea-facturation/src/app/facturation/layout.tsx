@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getCurrentUserProfile } from "@/services/auth.service";
+import { getCurrentUserProfile } from "@rutea/shared";
 import { Sidebar } from "@/components/admin/Sidebar";
-import type { UserProfile } from "@/types/auth";
+import type { UserProfile } from "@rutea/shared";
 
 export default function FacturationLayout({
   children,

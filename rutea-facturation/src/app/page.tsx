@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { LoginForm } from "@/components/auth/LoginForm";
+import { LoginForm } from "@rutea/shared";
 
 export const metadata: Metadata = {
   title: "Iniciar sesión — Rutea",

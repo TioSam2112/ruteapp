@@ -1,6 +1,7 @@
 packages:
   - "rutea-facturation"
   - "rutea-fulfillment"
+  - "shared"
 allowBuilds:
   '@firebase/util': true
   protobufjs: true

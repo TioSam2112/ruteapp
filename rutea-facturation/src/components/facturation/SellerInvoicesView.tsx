@@ -14,9 +14,9 @@ import {
   type Order,
   type PickingAuditUser,
 } from "@rutea/shared";
-import { getCurrentUserProfile } from "@/services/auth.service";
+import { getCurrentUserProfile } from "@rutea/shared";
 import { SellerInvoicesList } from "@/components/facturation/SellerInvoicesList";
-import type { UserProfile } from "@/types/auth";
+import type { UserProfile } from "@rutea/shared";
 
 export function SellerInvoicesView() {
   const [profile, setProfile] = useState<UserProfile | null>(null);

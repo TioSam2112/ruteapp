@@ -10,9 +10,9 @@ import {
   ClipboardCheck,
   Loader2,
 } from "lucide-react";
-import { getCurrentUserProfile } from "@/services/auth.service";
+import { getCurrentUserProfile } from "@rutea/shared";
 import { PosInterface } from "@/components/facturation/PosInterface";
-import type { UserProfile } from "@/types/auth";
+import type { UserProfile } from "@rutea/shared";
 
 export function FacturationPosView() {
   const router = useRouter();

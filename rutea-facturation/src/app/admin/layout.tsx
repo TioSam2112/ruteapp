@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getCurrentUserProfile } from "@/services/auth.service";
+import { getCurrentUserProfile, type UserProfile } from "@rutea/shared";
 import { Sidebar } from "@/components/admin/Sidebar";
-import type { UserProfile } from "@/types/auth";
 
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {
   const router = useRouter();

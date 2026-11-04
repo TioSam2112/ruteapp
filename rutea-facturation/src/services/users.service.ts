@@ -10,8 +10,13 @@ import {
   onSnapshot,
   Unsubscribe,
 } from "firebase/firestore";
-import { db, firebaseConfig } from "@rutea/shared";
-import type { CreateUserData, UpdateUserData, UserProfile } from "@/types/auth";
+import {
+  db,
+  firebaseConfig,
+  type CreateUserData,
+  type UpdateUserData,
+  type UserProfile,
+} from "@rutea/shared";
 
 export async function createUser(data: CreateUserData): Promise<UserProfile> {
   const secondaryAppName = `admin-user-create-${Date.now()}`;

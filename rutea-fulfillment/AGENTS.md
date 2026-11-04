@@ -1,9 +1,10 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# RUTEA FULFILLMENT — SUB-APP AGENT DIRECTIVE
 
-## This is NOT the Next.js you know
+> **MANDATORY:** Before modifying or creating any file in this sub-application, you **MUST** read [`../AGENTS.md`](../AGENTS.md) and [`../MEMORY.md`](../MEMORY.md) at the monorepo root, and apply the skills located in [`../.agents/skills/`](../.agents/skills/).
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+## Scope & Handled Routes
 
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+This Next.js App Router application serves **Warehouse Staff & Pickers** and exclusively manages the following route groups:
 
-<!-- END:nextjs-agent-rules -->
+- **`/picking`**: Touch-friendly real-time order picking workspace grouped by population and FIFO arrival order.
+- **`/admin`**: Warehouse operations and user management dashboard.

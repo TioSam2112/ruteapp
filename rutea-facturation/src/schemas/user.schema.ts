@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { UserRole } from "@/types/auth";
+import type { UserRole } from "@rutea/shared";
 
 export const createUserSchema = z.object({
   nombre: z.string().trim().min(2, "El nombre debe tener al menos 2 caracteres."),

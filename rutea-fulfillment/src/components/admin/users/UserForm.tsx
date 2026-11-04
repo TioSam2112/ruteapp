@@ -10,7 +10,7 @@ import {
   type UserFormValues,
 } from "@/schemas/user.schema";
 import { USER_ROLE_OPTIONS } from "@/constants/roles";
-import type { UserProfile } from "@/types/auth";
+import type { UserProfile } from "@rutea/shared";
 
 interface UserFormProps {
   userToEdit?: UserProfile | null;

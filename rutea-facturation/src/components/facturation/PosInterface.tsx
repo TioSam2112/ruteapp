@@ -34,7 +34,7 @@ import {
 import type { OrderItem, ClientOrderData, Order } from "@rutea/shared";
 import { searchPosProducts } from "@/utils/facturation";
 import type { Product } from "@/types/product";
-import type { UserProfile } from "@/types/auth";
+import type { UserProfile } from "@rutea/shared";
 
 interface PosInterfaceProps {
   currentUser: UserProfile;

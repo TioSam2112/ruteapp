@@ -5,7 +5,7 @@ import { UserPlus, Users, Loader2 } from "lucide-react";
 import { subscribeUsers } from "@/services/users.service";
 import { UsersTable } from "@/components/admin/users/UsersTable";
 import { UserModal } from "@/components/admin/users/UserModal";
-import type { UserProfile } from "@/types/auth";
+import type { UserProfile } from "@rutea/shared";
 
 export function UsersView() {
   const [users, setUsers] = useState<UserProfile[]>([]);

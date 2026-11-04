@@ -4,7 +4,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useState } from "react";
-import { logout } from "@/services/auth.service";
+import { logout } from "@rutea/shared";
 import { Tooltip } from "@/components/ui/Tooltip";
 import {
   ADMIN_NAV_GROUPS,

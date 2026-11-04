@@ -10,7 +10,7 @@ import {
   formatRegistrationDate,
 } from "@/utils/user";
 import { DeleteUserDialog } from "@/components/admin/users/DeleteUserDialog";
-import type { UserProfile } from "@/types/auth";
+import type { UserProfile } from "@rutea/shared";
 
 interface UsersTableProps {
   users: UserProfile[];

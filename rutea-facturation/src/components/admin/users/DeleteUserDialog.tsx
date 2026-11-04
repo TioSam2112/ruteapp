@@ -2,7 +2,7 @@
 
 import { AlertTriangle } from "lucide-react";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
-import type { UserProfile } from "@/types/auth";
+import type { UserProfile } from "@rutea/shared";
 
 interface DeleteUserDialogProps {
   user: UserProfile | null;
