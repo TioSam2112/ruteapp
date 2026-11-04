@@ -3,23 +3,34 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createUser, updateUser } from "@/services/users.service";
+import { createUser, updateUser } from "../../../services/users.service";
 import {
   createUserSchema,
   editUserSchema,
   type UserFormValues,
-} from "@/schemas/user.schema";
-import { USER_ROLE_OPTIONS } from "@/constants/roles";
-import type { UserProfile } from "@rutea/shared";
+} from "../../../schemas/user.schema";
+import { USER_ROLE_OPTIONS } from "../../../constants/roles";
+import { ALL_USER_ROLES } from "../../../services/auth.service";
+import type { UserProfile, UserRole } from "../../../types/auth";
 
 interface UserFormProps {
   userToEdit?: UserProfile | null;
+  availableRoles?: readonly UserRole[];
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export function UserForm({ userToEdit, onSuccess, onCancel }: UserFormProps) {
+export function UserForm({
+  userToEdit,
+  availableRoles = ALL_USER_ROLES,
+  onSuccess,
+  onCancel,
+}: UserFormProps) {
   const isEdit = Boolean(userToEdit);
+  const roleOptions = USER_ROLE_OPTIONS.filter(
+    (option) =>
+      availableRoles.includes(option.value) || option.value === userToEdit?.rol
+  );
 
   const {
     register,
@@ -172,7 +183,7 @@ export function UserForm({ userToEdit, onSuccess, onCancel }: UserFormProps) {
           {...register("rol")}
           className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-sm text-foreground outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
         >
-          {USER_ROLE_OPTIONS.map((option) => (
+          {roleOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>

@@ -3,14 +3,15 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
-import { UserForm } from "@/components/admin/users/UserForm";
-import { useEscapeKey } from "@/hooks/useEscapeKey";
-import type { UserProfile } from "@rutea/shared";
+import { UserForm } from "./UserForm";
+import { useEscapeKey } from "../../../hooks/useEscapeKey";
+import type { UserProfile, UserRole } from "../../../types/auth";
 
 interface UserModalProps {
   isOpen: boolean;
   onClose: () => void;
   userToEdit?: UserProfile | null;
+  availableRoles?: readonly UserRole[];
   onSuccess?: () => void;
 }
 
@@ -18,6 +19,7 @@ export function UserModal({
   isOpen,
   onClose,
   userToEdit,
+  availableRoles,
   onSuccess,
 }: UserModalProps) {
   const [mounted, setMounted] = useState(false);
@@ -70,6 +72,7 @@ export function UserModal({
 
         <UserForm
           userToEdit={userToEdit}
+          availableRoles={availableRoles}
           onSuccess={handleSuccess}
           onCancel={onClose}
         />

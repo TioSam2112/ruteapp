@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, UserPlus, Edit3 } from "lucide-react";
 import { ClientForm } from "@/components/admin/clients/ClientForm";
-import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { useEscapeKey } from "@rutea/shared";
 import type { Client } from "@/types/client";
 
 interface ClientModalProps {

@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
-import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { useEscapeKey } from "@rutea/shared";
 import type { Product } from "@/types/product";
 
 interface DeleteProductDialogProps {

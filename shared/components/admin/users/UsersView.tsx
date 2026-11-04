@@ -2,12 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { UserPlus, Users, Loader2 } from "lucide-react";
-import { subscribeUsers } from "@/services/users.service";
-import { UsersTable } from "@/components/admin/users/UsersTable";
-import { UserModal } from "@/components/admin/users/UserModal";
-import type { UserProfile } from "@rutea/shared";
+import { subscribeUsers } from "../../../services/users.service";
+import { UsersTable } from "./UsersTable";
+import { UserModal } from "./UserModal";
+import type { UserProfile, UserRole } from "../../../types/auth";
 
-export function UsersView() {
+interface UsersViewProps {
+  availableRoles?: readonly UserRole[];
+}
+
+export function UsersView({ availableRoles }: UsersViewProps) {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -97,6 +101,7 @@ export function UsersView() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         userToEdit={userToEdit}
+        availableRoles={availableRoles}
       />
     </div>
   );

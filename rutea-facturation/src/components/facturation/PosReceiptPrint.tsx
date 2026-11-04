@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Printer, X, FileCheck2, History } from "lucide-react";
 import type { Order } from "@rutea/shared";
-import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { useEscapeKey } from "@rutea/shared";
 import { buildPos80mmTicketData } from "@/utils/reliquidation";
 
 export interface PosReceiptPrintProps {

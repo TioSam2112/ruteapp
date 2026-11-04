@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { getClients } from "@/services/clients.service";
 import { searchClients } from "@/utils/client";
-import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { useEscapeKey } from "@rutea/shared";
 import { DEFAULT_CONSUMIDOR_FINAL } from "@/constants/clients";
 import type { Client } from "@/types/client";
 import type { ClientOrderData } from "@rutea/shared";

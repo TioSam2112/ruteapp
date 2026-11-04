@@ -22,7 +22,7 @@ import { subscribeProducts } from "@/services/products.service";
 import { ClientSelectorFact } from "@/components/facturation/ClientSelectorFact";
 import { ProductOptionsModal } from "@/components/facturation/ProductOptionsModal";
 import { DEFAULT_CONSUMIDOR_FINAL } from "@/constants/clients";
-import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { useEscapeKey } from "@rutea/shared";
 import {
   createOrder,
   calculateOrderTotals,

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { UsersView } from "@/components/admin/users/UsersView";
+import { UsersView } from "@rutea/shared";
 
 export const metadata: Metadata = {
   title: "Usuarios & Roles — Rutea Admin",

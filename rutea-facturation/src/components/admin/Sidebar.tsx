@@ -5,7 +5,7 @@ import Link from "next/link";
 import { LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useState } from "react";
 import { logout } from "@rutea/shared";
-import { Tooltip } from "@/components/ui/Tooltip";
+import { Tooltip } from "@rutea/shared";
 import {
   ADMIN_NAV_GROUPS,
   FACTURATION_NAV_GROUPS,

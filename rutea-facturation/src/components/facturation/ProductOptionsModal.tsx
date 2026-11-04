@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X, Plus, Minus, Scale, FileText, Check } from "lucide-react";
-import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { useEscapeKey } from "@rutea/shared";
 import {
   calculateItemSubtotal,
   calculateQuantityAdjustment,

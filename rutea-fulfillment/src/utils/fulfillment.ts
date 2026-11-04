@@ -6,7 +6,7 @@ import type {
   PickingAuditUser,
   UserProfile,
 } from "@rutea/shared";
-import { getUserFullName } from "@/utils/user";
+import { getUserFullName } from "@rutea/shared";
 
 export type FulfillmentFilterMode = "HOY" | "TODAS" | "PENDIENTE_LLEGADA";
 

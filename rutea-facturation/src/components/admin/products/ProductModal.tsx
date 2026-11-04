@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, PackagePlus, Edit3 } from "lucide-react";
 import { ProductForm } from "@/components/admin/products/ProductForm";
-import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { useEscapeKey } from "@rutea/shared";
 import type { Product } from "@/types/product";
 
 interface ProductModalProps {

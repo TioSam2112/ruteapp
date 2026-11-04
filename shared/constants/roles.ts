@@ -1,4 +1,4 @@
-import type { UserRole } from "@rutea/shared";
+import type { UserRole } from "../types/auth";
 
 export interface RoleOption {
   value: UserRole;

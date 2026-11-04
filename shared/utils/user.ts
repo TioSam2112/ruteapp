@@ -1,4 +1,4 @@
-import type { UserProfile } from "@rutea/shared";
+import type { UserProfile } from "../types/auth";
 
 export function getUserInitials(
   user: Pick<UserProfile, "email"> & { nombre?: string | null; apellido?: string | null }

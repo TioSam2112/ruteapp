@@ -38,7 +38,9 @@ An invoice passes through all 3 monorepo modules under a single Firestore docume
   - `services/auth.service.ts` (`loginUser`, `logout`, `getCurrentUserProfile`)
   - `services/orders.service.ts` (CRUD operations and real-time order subscriptions)
   - `components/auth/LoginForm.tsx` (Login form parameterized by `allowedRoles` and `redirectMap`)
-  - `schemas/auth.schema.ts`, `types/auth.ts`, `types/order.ts`, `utils/facturation.ts`
+  - `schemas/auth.schema.ts`, `schemas/user.schema.ts`, `types/auth.ts`, `types/order.ts`, `utils/facturation.ts`, `utils/user.ts`
+  - `services/users.service.ts` (admin user CRUD), `constants/roles.ts`, `hooks/useEscapeKey.ts`, `components/ui/Tooltip.tsx`
+  - `components/admin/users/` (`UsersView`, `UsersTable`, `UserModal`, `UserForm`, `DeleteUserDialog`; `availableRoles?: readonly UserRole[]` prop filters selectable roles, defaults to all). The picker role id is `'picker'`.
 
 ---
 
@@ -46,7 +48,7 @@ An invoice passes through all 3 monorepo modules under a single Firestore docume
 
 - [x] **Phase 1:** Create `/AGENTS.md` and `/MEMORY.md`, and centralize `/.agents/skills/` at the root.
 - [x] **Phase 2:** Unify the PNPM Workspace (remove duplicate `pnpm-lock.yaml` and `pnpm-workspace.yaml` files from sub-apps and clean up redundant `auth` re-exports).
-- [ ] **Phase 3:** Extract duplicated code (`Tooltip`, `useEscapeKey`, and the entire admin `users` module) into `@rutea/shared`.
+- [x] **Phase 3:** Extract duplicated code (`Tooltip`, `useEscapeKey`, and the entire admin `users` module) into `@rutea/shared`.
 - [ ] **Phase 4:** Internally modularize `shared/services/orders.service.ts` into domain-specific submodules.
 - [ ] **Phase 5:** Break down large components in `rutea-facturation` (`PosInterface`, `InvoiceComparisonDetail`, `PosReceiptPrint`, `SellerInvoicesList`).
 - [ ] **Phase 6:** Break down large components in `rutea-fulfillment` (`InvoicePickingDetail`, `PickingItemRow`, `InvoiceQueueList`).

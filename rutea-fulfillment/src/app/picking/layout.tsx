@@ -16,7 +16,7 @@ import {
   type UserProfile,
 } from "@rutea/shared";
 import { isAuthorizedPickingRole } from "@/utils/fulfillment";
-import { getUserFullName } from "@/utils/user";
+import { getUserFullName } from "@rutea/shared";
 
 interface PickingLayoutProps {
   children: ReactNode;

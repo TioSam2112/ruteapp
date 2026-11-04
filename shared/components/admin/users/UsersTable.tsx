@@ -2,15 +2,15 @@
 
 import { useState } from "react";
 import { Edit2, Trash2 } from "lucide-react";
-import { deleteUser } from "@/services/users.service";
-import { ROLE_BADGE_CONFIG } from "@/constants/roles";
+import { deleteUser } from "../../../services/users.service";
+import { ROLE_BADGE_CONFIG } from "../../../constants/roles";
 import {
   getUserInitials,
   getUserFullName,
   formatRegistrationDate,
-} from "@/utils/user";
-import { DeleteUserDialog } from "@/components/admin/users/DeleteUserDialog";
-import type { UserProfile } from "@rutea/shared";
+} from "../../../utils/user";
+import { DeleteUserDialog } from "./DeleteUserDialog";
+import type { UserProfile } from "../../../types/auth";
 
 interface UsersTableProps {
   users: UserProfile[];
