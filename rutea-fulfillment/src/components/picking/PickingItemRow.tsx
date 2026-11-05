@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowRight, PlusCircle } from "lucide-react";
 import type { OrderItem, OrderItemPickingPatch } from "@rutea/shared";
 import { usePickingItemActions } from "@/hooks/useOrderPickingActions";
 import { PickingItemStatusActions } from "@/components/picking/PickingItemStatusActions";
@@ -8,6 +9,7 @@ import { PickingItemNoteBox } from "@/components/picking/PickingItemNoteBox";
 export interface PickingItemRowProps {
   item: OrderItem;
   itemIndex: number;
+  readOnly?: boolean;
   onUpdateItem: (
     itemIndex: number,
     patch: OrderItemPickingPatch
@@ -17,6 +19,7 @@ export interface PickingItemRowProps {
 export function PickingItemRow({
   item,
   itemIndex,
+  readOnly = false,
   onUpdateItem,
 }: PickingItemRowProps) {
   const {
@@ -39,6 +42,8 @@ export function PickingItemRow({
     onUpdateItem,
   });
 
+  const isDisabled = isSaving || readOnly;
+
   const containerToneClasses =
     currentStatus === "ALISTADO"
       ? "border-emerald-500/35 bg-emerald-500/[0.03]"
@@ -46,7 +51,9 @@ export function PickingItemRow({
         ? "border-amber-500/40 bg-amber-500/[0.04]"
         : currentStatus === "AGOTADO"
           ? "border-destructive/30 bg-destructive/[0.025]"
-          : "border-border/70 bg-card";
+          : item.isAddedAfterCreation
+            ? "border-amber-500/45 bg-amber-500/[0.04]"
+            : "border-border/70 bg-card";
 
   return (
     <div
@@ -69,14 +76,31 @@ export function PickingItemRow({
                 {item.sku}
               </span>
             )}
+            {item.isAddedAfterCreation && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold tracking-wider text-amber-600 uppercase">
+                <PlusCircle size={11} className="shrink-0" />
+                NUEVO AÑADIDO
+              </span>
+            )}
           </div>
 
-          <p className="text-xs font-medium text-muted-foreground">
-            Pedido original:{" "}
-            <span className="font-mono font-semibold text-foreground">
-              {item.cantidad} {item.unidadMedida}
+          <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-muted-foreground">
+            <span>
+              Pedido original:{" "}
+              <span className="font-mono font-semibold text-foreground">
+                {item.cantidad} {item.unidadMedida}
+              </span>
             </span>
-          </p>
+
+            {item.isAddedAfterCreation &&
+              item.previousQuantity !== undefined && (
+                <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 font-mono text-[11px] font-semibold text-amber-600">
+                  <span>Antes: {item.previousQuantity}</span>
+                  <ArrowRight size={11} className="shrink-0" />
+                  <span>Ahora: {item.cantidad}</span>
+                </span>
+              )}
+          </div>
 
           {item.observationItem?.trim() && (
             <p className="pt-0.5 text-xs font-medium italic text-amber-600 dark:text-amber-400">
@@ -108,7 +132,7 @@ export function PickingItemRow({
                     e.currentTarget.blur();
                   }
                 }}
-                disabled={isSaving}
+                disabled={isDisabled}
                 className="h-11 w-24 rounded-xl border border-border bg-input px-3 text-center font-mono text-sm font-semibold text-foreground shadow-2xs transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none disabled:opacity-60"
               />
               <span className="text-xs font-medium text-muted-foreground">
@@ -120,7 +144,7 @@ export function PickingItemRow({
           <PickingItemStatusActions
             itemName={item.nombre}
             currentStatus={currentStatus}
-            disabled={isSaving}
+            disabled={isDisabled}
             onSelectStatus={handleSelectStatus}
           />
         </div>
@@ -132,6 +156,7 @@ export function PickingItemRow({
         hasDraftNote={hasDraftNote}
         auditText={auditText}
         isSaving={isSaving}
+        readOnly={readOnly}
         onOpenNote={openNoteEditor}
         onChangeNote={setDraftNote}
         onSaveNote={handleSaveNote}

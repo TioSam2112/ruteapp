@@ -6,6 +6,8 @@ import {
   MapPin,
   Loader2,
   AlertCircle,
+  RotateCcw,
+  Truck,
 } from "lucide-react";
 import type { Order, PickingAuditUser } from "@rutea/shared";
 import {
@@ -31,11 +33,13 @@ export function InvoicePickingDetail({
 }: InvoicePickingDetailProps) {
   const {
     isCompleting,
+    isReopening,
     isTogglingObs,
     actionError,
     handleUpdateItem,
     handleToggleGeneralObservation,
     handleCompleteFulfillment,
+    handleReopenOrder,
   } = useOrderPickingActions({
     order,
     auditUser,
@@ -45,6 +49,8 @@ export function InvoicePickingDetail({
   const stats = calculateOrderPickingProgress(order);
   const ciudadLabel =
     order.clientData.ciudad?.trim() || "Sin población especificada";
+  const isReadOnly =
+    order.estado === "ALISTADO" || order.estado === "LISTO_PARA_REPARTO";
 
   return (
     <div className="flex min-h-full flex-col bg-background">
@@ -55,7 +61,7 @@ export function InvoicePickingDetail({
               type="button"
               onClick={onBackToQueue}
               aria-label="Volver a la cola de facturas"
-              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-border/80 bg-card px-3 text-xs font-semibold text-foreground transition-all duration-150 hover:bg-accent active:scale-[0.97] lg:hidden"
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-border/80 bg-card px-3.5 text-xs font-semibold text-foreground transition-all duration-150 hover:bg-accent active:scale-[0.97] lg:hidden"
             >
               <ArrowLeft size={15} />
               <span>Cola</span>
@@ -78,24 +84,50 @@ export function InvoicePickingDetail({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={handleCompleteFulfillment}
-            disabled={isCompleting}
-            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground shadow-xs transition-all duration-150 hover:bg-primary-hover active:scale-[0.97] disabled:opacity-60 sm:text-sm"
-          >
-            {isCompleting ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                <span>Finalizando…</span>
-              </>
-            ) : (
-              <>
-                <CheckCircle2 size={16} strokeWidth={2.2} />
-                <span>Finalizar Alistamiento</span>
-              </>
-            )}
-          </button>
+          {order.estado === "ALISTADO" ? (
+            <button
+              type="button"
+              onClick={handleReopenOrder}
+              disabled={isReopening}
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/15 px-5 py-2.5 text-xs font-semibold text-amber-600 shadow-2xs transition-all duration-150 hover:bg-amber-500/25 active:scale-[0.97] disabled:opacity-60 sm:text-sm"
+            >
+              {isReopening ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Reabriendo…</span>
+                </>
+              ) : (
+                <>
+                  <RotateCcw size={16} strokeWidth={2.2} />
+                  <span>Retomar / Corregir Alistamiento</span>
+                </>
+              )}
+            </button>
+          ) : order.estado === "LISTO_PARA_REPARTO" ? (
+            <span className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-semibold text-primary">
+              <Truck size={15} />
+              <span>En Despacho (Solo lectura)</span>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={handleCompleteFulfillment}
+              disabled={isCompleting}
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground shadow-xs transition-all duration-150 hover:bg-primary-hover active:scale-[0.97] disabled:opacity-60 sm:text-sm"
+            >
+              {isCompleting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Finalizando…</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={16} strokeWidth={2.2} />
+                  <span>Finalizar Alistamiento</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </header>
 
@@ -111,6 +143,7 @@ export function InvoicePickingDetail({
           order={order}
           ciudadLabel={ciudadLabel}
           isTogglingObs={isTogglingObs}
+          readOnly={isReadOnly}
           onToggleGeneralObservation={handleToggleGeneralObservation}
         />
 
@@ -145,6 +178,7 @@ export function InvoicePickingDetail({
                 key={`${order.id}-${item.id_producto}-${idx}`}
                 item={item}
                 itemIndex={idx}
+                readOnly={isReadOnly}
                 onUpdateItem={handleUpdateItem}
               />
             ))}

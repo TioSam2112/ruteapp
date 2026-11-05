@@ -1,9 +1,11 @@
 import {
   Clock,
   FileText,
+  FilePlus2,
   ChevronRight,
   UserCheck,
   CheckCircle2,
+  Truck,
 } from "lucide-react";
 import type { Order } from "@rutea/shared";
 import { getOrderQueueCardSummary } from "@/utils/fulfillment";
@@ -20,13 +22,24 @@ export function InvoiceQueueCard({
   onSelect,
 }: InvoiceQueueCardProps) {
   const summary = getOrderQueueCardSummary(order);
+  const showAddedEditedBadge =
+    Boolean(order.hasPostPickingAdditions) || summary.hasPostPickingAdditions;
 
   const statusBadgeClasses =
-    summary.statusMeta.tone === "in_progress"
-      ? "border-primary/25 bg-primary/10 text-primary"
-      : summary.statusMeta.tone === "completed"
-        ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-600"
-        : "border-border bg-accent/70 text-muted-foreground";
+    order.estado === "ALISTADO"
+      ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-600"
+      : order.estado === "LISTO_PARA_REPARTO"
+        ? "border-primary/30 bg-primary/15 text-primary"
+        : summary.statusMeta.tone === "in_progress"
+          ? "border-primary/25 bg-primary/10 text-primary"
+          : "border-border bg-accent/70 text-muted-foreground";
+
+  const statusBadgeLabel =
+    order.estado === "ALISTADO"
+      ? "Alistada"
+      : order.estado === "LISTO_PARA_REPARTO"
+        ? "En Despacho"
+        : summary.statusMeta.label;
 
   const progressFillClasses =
     summary.stats.progressPercentage === 100
@@ -57,10 +70,19 @@ export function InvoiceQueueCard({
         </div>
 
         <div className="flex items-center gap-1.5">
+          {showAddedEditedBadge && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/35 bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-semibold tracking-tight text-amber-600">
+              <FilePlus2 size={11} className="shrink-0" />
+              Añadido / Editado
+            </span>
+          )}
           <span
-            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-semibold tracking-tight ${statusBadgeClasses}`}
+            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold tracking-tight ${statusBadgeClasses}`}
           >
-            {summary.statusMeta.label}
+            {order.estado === "LISTO_PARA_REPARTO" && (
+              <Truck size={11} className="shrink-0" />
+            )}
+            {statusBadgeLabel}
           </span>
           <ChevronRight
             size={15}
@@ -131,9 +153,7 @@ export function InvoiceQueueCard({
 
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
           <div
-            style={{
-              width: `${summary.stats.progressPercentage}%`,
-            }}
+            style={{ width: `${summary.stats.progressPercentage}%` }}
             className={`h-full rounded-full transition-all duration-300 ease-out ${progressFillClasses}`}
           />
         </div>

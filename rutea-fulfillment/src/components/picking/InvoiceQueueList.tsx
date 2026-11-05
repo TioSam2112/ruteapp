@@ -1,17 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Clock, MapPin, Inbox } from "lucide-react";
+import { Clock, FilePlus2, History, Inbox, MapPin } from "lucide-react";
 import type { Order } from "@rutea/shared";
 import {
   EMPTY_QUEUE_DESCRIPTIONS,
-  FILTER_SEGMENTS,
+  QUEUE_FILTER_OPTIONS,
+  type QueueFilter,
 } from "@/constants/picking";
 import {
+  countModifiedOrders,
   filterFulfillmentOrders,
   getFulfillmentFilterCounts,
   groupOrdersByCityFIFO,
-  type FulfillmentFilterMode,
 } from "@/utils/fulfillment";
 import { InvoiceQueueCard } from "@/components/picking/InvoiceQueueCard";
 
@@ -28,11 +29,15 @@ export function InvoiceQueueList({
   onSelectOrder,
   isLoading = false,
 }: InvoiceQueueListProps) {
-  const [activeFilter, setActiveFilter] =
-    useState<FulfillmentFilterMode>("TODAS");
+  const [activeFilter, setActiveFilter] = useState<QueueFilter>("available");
 
   const filterCounts = useMemo(
     () => getFulfillmentFilterCounts(orders),
+    [orders]
+  );
+
+  const modifiedAlertCount = useMemo(
+    () => countModifiedOrders(orders),
     [orders]
   );
 
@@ -60,26 +65,39 @@ export function InvoiceQueueList({
         <div
           role="tablist"
           aria-label="Filtrar facturas"
-          className="grid grid-cols-3 gap-1 rounded-xl bg-accent/85 p-1"
+          className="flex flex-wrap gap-1 rounded-xl bg-accent/85 p-1"
         >
-          {FILTER_SEGMENTS.map(({ mode, label }) => {
-            const isSelected = activeFilter === mode;
-            const count = filterCounts[mode];
-            const isPendingTab = mode === "PENDIENTE_LLEGADA";
+          {QUEUE_FILTER_OPTIONS.map(({ id, label }) => {
+            const isSelected = activeFilter === id;
+            const count =
+              id === "modified" ? modifiedAlertCount : filterCounts[id];
+            const isModifiedTab = id === "modified";
+            const isPendingTab = id === "pending_items";
+            const isHistoryTab = id === "history";
 
             return (
               <button
-                key={mode}
+                key={id}
                 type="button"
                 role="tab"
                 aria-selected={isSelected}
-                onClick={() => setActiveFilter(mode)}
-                className={`flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs transition-all duration-150 active:scale-[0.98] ${
+                onClick={() => setActiveFilter(id)}
+                className={`flex min-h-[38px] flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs whitespace-nowrap transition-all duration-150 active:scale-[0.98] ${
                   isSelected
                     ? "bg-card font-semibold text-foreground shadow-xs"
                     : "font-medium text-muted-foreground hover:text-foreground"
                 }`}
               >
+                {isModifiedTab && (
+                  <FilePlus2
+                    size={12.5}
+                    className={
+                      count > 0
+                        ? "shrink-0 text-amber-500"
+                        : "shrink-0 text-muted-foreground"
+                    }
+                  />
+                )}
                 {isPendingTab && (
                   <Clock
                     size={12.5}
@@ -90,18 +108,25 @@ export function InvoiceQueueList({
                     }
                   />
                 )}
+                {isHistoryTab && (
+                  <History size={12.5} className="shrink-0 text-muted-foreground" />
+                )}
                 <span className="truncate">{label}</span>
-                <span
-                  className={`inline-flex min-w-[18px] items-center justify-center rounded-full px-1.5 py-0.2 font-mono text-[10px] leading-4 ${
-                    isSelected
-                      ? isPendingTab && count > 0
-                        ? "bg-amber-500/15 font-semibold text-amber-600"
-                        : "bg-primary/10 font-semibold text-primary"
-                      : "bg-background/60 text-muted-foreground"
-                  }`}
-                >
-                  {count}
-                </span>
+                {(!isModifiedTab || count > 0) && (
+                  <span
+                    className={`inline-flex min-w-[18px] items-center justify-center rounded-full px-1.5 py-0.2 font-mono text-[10px] leading-4 ${
+                      isModifiedTab && count > 0
+                        ? "bg-amber-500 font-bold text-white shadow-2xs"
+                        : isSelected
+                          ? isPendingTab && count > 0
+                            ? "bg-amber-500/15 font-semibold text-amber-600"
+                            : "bg-primary/10 font-semibold text-primary"
+                          : "bg-background/60 text-muted-foreground"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
               </button>
             );
           })}

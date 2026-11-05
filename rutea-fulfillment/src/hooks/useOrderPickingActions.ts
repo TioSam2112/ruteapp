@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   completeOrderFulfillment,
+  reopenOrderFulfillment,
   toggleGeneralObservationCheck,
   updateOrderItemPicking,
   type ItemPickingStatus,
@@ -21,14 +22,17 @@ export interface UseOrderPickingActionsParams {
   order: Order;
   auditUser: PickingAuditUser;
   onOrderCompleted?: (orderId: string) => void;
+  onOrderReopened?: (orderId: string) => void;
 }
 
 export function useOrderPickingActions({
   order,
   auditUser,
   onOrderCompleted,
+  onOrderReopened,
 }: UseOrderPickingActionsParams) {
   const [isCompleting, setIsCompleting] = useState(false);
+  const [isReopening, setIsReopening] = useState(false);
   const [isTogglingObs, setIsTogglingObs] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -87,13 +91,32 @@ export function useOrderPickingActions({
     }
   };
 
+  const handleReopenOrder = async () => {
+    setActionError(null);
+    setIsReopening(true);
+    try {
+      await reopenOrderFulfillment(order.id, auditUser);
+      onOrderReopened?.(order.id);
+    } catch (err) {
+      setActionError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo reabrir la factura para alistamiento."
+      );
+    } finally {
+      setIsReopening(false);
+    }
+  };
+
   return {
     isCompleting,
+    isReopening,
     isTogglingObs,
     actionError,
     handleUpdateItem,
     handleToggleGeneralObservation,
     handleCompleteFulfillment,
+    handleReopenOrder,
   };
 }
 

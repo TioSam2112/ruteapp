@@ -7,8 +7,12 @@ import type {
   UserProfile,
 } from "@rutea/shared";
 import { getUserFullName } from "@rutea/shared";
+import type {
+  FulfillmentFilterMode,
+  QueueFilter,
+} from "@/constants/picking";
 
-export type FulfillmentFilterMode = "HOY" | "TODAS" | "PENDIENTE_LLEGADA";
+export type { FulfillmentFilterMode, QueueFilter };
 
 export interface OrderPickingStats {
   totalItems: number;
@@ -143,6 +147,28 @@ export function isOrderAvailableForFulfillment(
   );
 }
 
+export function isOrderCompletedByFulfillment(
+  order: Pick<Order, "estado">
+): boolean {
+  return (
+    order.estado === "ALISTADO" || order.estado === "LISTO_PARA_REPARTO"
+  );
+}
+
+export function hasOrderPostPickingAdditions(
+  order: Pick<Order, "hasPostPickingAdditions" | "items">
+): boolean {
+  if (order.hasPostPickingAdditions === true) {
+    return true;
+  }
+
+  return order.items.some(
+    (item) =>
+      item.isAddedAfterCreation === true &&
+      getItemPickingStatus(item) === "PENDIENTE_REVISION"
+  );
+}
+
 export function hasOrderPendingArrivalItems(
   order: Pick<Order, "items">
 ): boolean {
@@ -166,6 +192,14 @@ export function filterOrdersFromToday(
   );
 }
 
+export function filterModifiedFulfillmentOrders(
+  orders: readonly Order[]
+): Order[] {
+  return filterAvailableFulfillmentOrders(orders).filter(
+    hasOrderPostPickingAdditions
+  );
+}
+
 export function filterOrdersWithPendingArrival(
   orders: readonly Order[]
 ): Order[] {
@@ -174,16 +208,33 @@ export function filterOrdersWithPendingArrival(
   );
 }
 
+export function filterHistoryFulfillmentOrders(
+  orders: readonly Order[]
+): Order[] {
+  return orders.filter(isOrderCompletedByFulfillment);
+}
+
+export function countModifiedOrders(orders: readonly Order[]): number {
+  return filterModifiedFulfillmentOrders(orders).length;
+}
+
 export function filterFulfillmentOrders(
   orders: readonly Order[],
-  mode: FulfillmentFilterMode,
+  filter: QueueFilter | FulfillmentFilterMode,
   referenceDate: Date = new Date()
 ): Order[] {
-  switch (mode) {
+  switch (filter) {
+    case "today":
     case "HOY":
       return filterOrdersFromToday(orders, referenceDate);
+    case "modified":
+      return filterModifiedFulfillmentOrders(orders);
+    case "pending_items":
     case "PENDIENTE_LLEGADA":
       return filterOrdersWithPendingArrival(orders);
+    case "history":
+      return filterHistoryFulfillmentOrders(orders);
+    case "available":
     case "TODAS":
     default:
       return filterAvailableFulfillmentOrders(orders);
@@ -241,6 +292,11 @@ export function groupOrdersByCityFIFO(
 }
 
 export interface FulfillmentFilterCounts {
+  today: number;
+  available: number;
+  modified: number;
+  pending_items: number;
+  history: number;
   HOY: number;
   TODAS: number;
   PENDIENTE_LLEGADA: number;
@@ -250,10 +306,21 @@ export function getFulfillmentFilterCounts(
   orders: readonly Order[],
   referenceDate: Date = new Date()
 ): FulfillmentFilterCounts {
+  const today = filterOrdersFromToday(orders, referenceDate).length;
+  const available = filterAvailableFulfillmentOrders(orders).length;
+  const modified = countModifiedOrders(orders);
+  const pending_items = filterOrdersWithPendingArrival(orders).length;
+  const history = filterHistoryFulfillmentOrders(orders).length;
+
   return {
-    HOY: filterOrdersFromToday(orders, referenceDate).length,
-    TODAS: filterAvailableFulfillmentOrders(orders).length,
-    PENDIENTE_LLEGADA: filterOrdersWithPendingArrival(orders).length,
+    today,
+    available,
+    modified,
+    pending_items,
+    history,
+    HOY: today,
+    TODAS: available,
+    PENDIENTE_LLEGADA: pending_items,
   };
 }
 
@@ -272,7 +339,7 @@ export function formatOrderArrivalTime(dateStr: string): string {
 
 export interface OrderFulfillmentStatusMeta {
   label: string;
-  tone: "pending" | "in_progress" | "completed";
+  tone: "pending" | "in_progress" | "completed" | "dispatched";
 }
 
 export function getOrderFulfillmentStatusMeta(
@@ -282,7 +349,9 @@ export function getOrderFulfillmentStatusMeta(
     case "EN_ALISTAMIENTO":
       return { label: "En alistamiento", tone: "in_progress" };
     case "ALISTADO":
-      return { label: "Alistado", tone: "completed" };
+      return { label: "Alistada", tone: "completed" };
+    case "LISTO_PARA_REPARTO":
+      return { label: "En Despacho", tone: "dispatched" };
     case "PENDIENTE_ALISTAMIENTO":
     default:
       return { label: "Por alistar", tone: "pending" };
@@ -312,6 +381,7 @@ export interface OrderQueueCardSummary {
   hasGeneralObservation: boolean;
   isGeneralObservationChecked: boolean;
   hasPendingArrival: boolean;
+  hasPostPickingAdditions: boolean;
 }
 
 export function getOrderQueueCardSummary(order: Order): OrderQueueCardSummary {
@@ -328,6 +398,7 @@ export function getOrderQueueCardSummary(order: Order): OrderQueueCardSummary {
     hasGeneralObservation,
     isGeneralObservationChecked: Boolean(order.generalObservationChecked),
     hasPendingArrival: stats.pendientesLlegadaCount > 0,
+    hasPostPickingAdditions: hasOrderPostPickingAdditions(order),
   };
 }
 
@@ -352,22 +423,22 @@ export function formatPickingAuditTrail(
 
   switch (audit.action) {
     case "ALISTADO":
-      return `✓ Alistado por ${name} a las ${time}`;
+      return `Alistado por ${name} a las ${time}`;
     case "PENDIENTE_LLEGADA":
-      return `🕒 Pendiente de llegada por ${name} a las ${time}`;
+      return `Pendiente de llegada por ${name} a las ${time}`;
     case "AGOTADO":
-      return `✕ Agotado por ${name} a las ${time}`;
+      return `Agotado por ${name} a las ${time}`;
     case "CANTIDAD_AJUSTADA":
-      return `✎ Cantidad ajustada por ${name} a las ${time}`;
+      return `Cantidad ajustada por ${name} a las ${time}`;
     case "NOTA_EDITADA":
-      return `✎ Nota editada por ${name} a las ${time}`;
+      return `Nota editada por ${name} a las ${time}`;
     case "OBS_GENERAL_CHECK":
       return checkedState === false
-        ? `○ Desmarcado por ${name} a las ${time}`
-        : `✓ Revisado por ${name} a las ${time}`;
+        ? `Desmarcado por ${name} a las ${time}`
+        : `Revisado por ${name} a las ${time}`;
     case "PENDIENTE_REVISION":
     default:
-      return `○ En revisión por ${name} a las ${time}`;
+      return `En revisión por ${name} a las ${time}`;
   }
 }
 
@@ -391,4 +462,3 @@ export function buildPickingAuditUser(
     userName: fullName,
   };
 }
-

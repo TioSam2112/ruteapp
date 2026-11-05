@@ -1,4 +1,9 @@
-import { MessageSquarePlus, CornerDownRight, Loader2 } from "lucide-react";
+import {
+  MessageSquarePlus,
+  CornerDownRight,
+  Loader2,
+  CircleDot,
+} from "lucide-react";
 
 export interface PickingItemNoteBoxProps {
   showNoteEditor: boolean;
@@ -6,6 +11,7 @@ export interface PickingItemNoteBoxProps {
   hasDraftNote: boolean;
   auditText: string | null;
   isSaving: boolean;
+  readOnly?: boolean;
   onOpenNote: () => void;
   onChangeNote: (value: string) => void;
   onSaveNote: () => void;
@@ -17,6 +23,7 @@ export function PickingItemNoteBox({
   hasDraftNote,
   auditText,
   isSaving,
+  readOnly = false,
   onOpenNote,
   onChangeNote,
   onSaveNote,
@@ -41,11 +48,11 @@ export function PickingItemNoteBox({
                 }
               }}
               placeholder="Escribe una novedad o nota del alistador para este producto…"
-              disabled={isSaving}
-              className="h-9 w-full rounded-xl border border-border/80 bg-input pr-3 pl-8 text-xs text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
+              disabled={isSaving || readOnly}
+              className="h-9 w-full rounded-xl border border-border/80 bg-input pr-3 pl-8 text-xs text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none disabled:opacity-60"
             />
           </div>
-          {hasDraftNote && (
+          {hasDraftNote && !readOnly && (
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
@@ -58,19 +65,22 @@ export function PickingItemNoteBox({
           )}
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={onOpenNote}
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <MessageSquarePlus size={13} />
-          <span>Agregar nota del alistador</span>
-        </button>
+        !readOnly && (
+          <button
+            type="button"
+            onClick={onOpenNote}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <MessageSquarePlus size={13} />
+            <span>Agregar nota del alistador</span>
+          </button>
+        )
       )}
 
       <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-        <span>
-          {auditText ?? "○ Pendiente de revisión por el alistador"}
+        <span className="inline-flex items-center gap-1.5">
+          <CircleDot size={11} className="shrink-0 text-muted-foreground/80" />
+          <span>{auditText ?? "Pendiente de revisión por el alistador"}</span>
         </span>
         {isSaving && (
           <span className="inline-flex items-center gap-1 text-[11px] text-primary">
