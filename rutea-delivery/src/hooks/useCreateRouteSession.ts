@@ -28,23 +28,35 @@ export function useCreateRouteSession({
   const [selectedCrewUids, setSelectedCrewUids] = useState<Set<string>>(
     () => new Set()
   );
-  const [nombreRuta, setNombreRuta] = useState("");
+  const [nombreRuta, setNombreRuta] = useState(
+    () => selectionSummary.suggestedRouteName
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    if (isOpen) {
+      setNombreRuta(selectionSummary.suggestedRouteName);
+      setSelectedCrewUids(new Set());
+      setError(null);
+    }
+  }
 
   useEffect(() => {
     if (!isOpen) return;
-    setNombreRuta(selectionSummary.suggestedRouteName);
-    setSelectedCrewUids(new Set());
-    setError(null);
+    let active = true;
     setLoadingUsers(true);
 
     getUsers()
       .then((users) => {
+        if (!active) return;
         const activeDelivery = users.filter((u) => u.rol === "delivery");
         setDeliveryUsers(activeDelivery);
       })
       .catch((err: unknown) => {
+        if (!active) return;
         const msg =
           err instanceof Error
             ? err.message
@@ -52,9 +64,13 @@ export function useCreateRouteSession({
         setError(msg);
       })
       .finally(() => {
-        setLoadingUsers(false);
+        if (active) setLoadingUsers(false);
       });
-  }, [isOpen, selectionSummary.suggestedRouteName]);
+
+    return () => {
+      active = false;
+    };
+  }, [isOpen]);
 
   const toggleCrewMember = useCallback((uid: string) => {
     setSelectedCrewUids((prev) => {
