@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import {
   calculateItemSubtotal,
@@ -8,10 +8,47 @@ import {
   calculateQuantityAdjustment,
   mergeOrAddOrderItem,
 } from "@rutea/shared";
-import type { OrderItem } from "@rutea/shared";
+import type { ClientOrderData, Order, OrderItem } from "@rutea/shared";
 import { subscribeProducts } from "@/services/products.service";
 import { searchPosProducts } from "@/utils/facturation";
+import { DEFAULT_CONSUMIDOR_FINAL } from "@/constants/clients";
 import type { Product } from "@/types/product";
+import type { Client } from "@/types/client";
+
+function resolveOrderClient(
+  order: Order,
+  availableClients: Client[]
+): ClientOrderData & { id: string } {
+  if (
+    order.id_cliente === DEFAULT_CONSUMIDOR_FINAL.id ||
+    order.clientData.nombre.trim().toUpperCase() === DEFAULT_CONSUMIDOR_FINAL.nombre
+  ) {
+    return DEFAULT_CONSUMIDOR_FINAL;
+  }
+
+  const matched = availableClients.find((c) => c.id === order.id_cliente);
+  if (matched) {
+    return {
+      id: matched.id,
+      nombre: matched.nombreComercio
+        ? `${matched.nombreComercio} (${matched.nombre})`
+        : matched.nombre,
+      nit: order.clientData.nit ?? "",
+      telefono: matched.telefono,
+      direccion: matched.direccion,
+      ciudad: matched.ciudad,
+    };
+  }
+
+  return {
+    id: order.id_cliente || DEFAULT_CONSUMIDOR_FINAL.id,
+    nombre: order.clientData.nombre || DEFAULT_CONSUMIDOR_FINAL.nombre,
+    nit: order.clientData.nit ?? "",
+    telefono: order.clientData.telefono ?? "",
+    direccion: order.clientData.direccion ?? "",
+    ciudad: order.clientData.ciudad ?? "",
+  };
+}
 
 export function usePosCart() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -24,6 +61,10 @@ export function usePosCart() {
   const [selectedProductForModal, setSelectedProductForModal] = useState<Product | null>(null);
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [clientData, setClientData] = useState<ClientOrderData & { id: string }>(
+    DEFAULT_CONSUMIDOR_FINAL
+  );
+  const [generalObservation, setGeneralObservation] = useState("");
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -133,10 +174,23 @@ export function usePosCart() {
     }
   };
 
-  const resetCart = () => {
+  const loadOrderForEdit = useCallback((order: Order, availableClients: Client[] = []) => {
+    const resolvedClient = resolveOrderClient(order, availableClients);
+    setClientData(resolvedClient);
+    setOrderItems(order.items.map((item) => ({ ...item })));
+    setGeneralObservation(order.generalObservation ?? "");
+    setSearchQuery("");
+    setIsDropdownOpen(false);
+    setSelectedProductForModal(null);
+    setEditingItemIndex(null);
+  }, []);
+
+  const resetCart = useCallback(() => {
     setOrderItems([]);
+    setClientData(DEFAULT_CONSUMIDOR_FINAL);
+    setGeneralObservation("");
     focusSearch();
-  };
+  }, []);
 
   return {
     loadingProducts,
@@ -155,10 +209,15 @@ export function usePosCart() {
     editingItemIndex,
     handleCloseModal,
     orderItems,
+    clientData,
+    setClientData,
+    generalObservation,
+    setGeneralObservation,
     handleEditItem,
     handleConfirmItem,
     handleRemoveItem,
     handleUpdateQuantity,
+    loadOrderForEdit,
     resetCart,
     totalBase,
     totalTax,

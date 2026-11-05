@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { FacturationPosView } from "@/components/facturation/FacturationPosView";
 
@@ -9,5 +10,9 @@ export const metadata: Metadata = {
 export const instant = false;
 
 export default function FacturationPage() {
-  return <FacturationPosView />;
+  return (
+    <Suspense fallback={null}>
+      <FacturationPosView />
+    </Suspense>
+  );
 }

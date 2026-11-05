@@ -1,4 +1,4 @@
-import { FileText, AlertTriangle, Send, Loader2 } from "lucide-react";
+import { FileText, AlertTriangle, Send, Save, Loader2 } from "lucide-react";
 import { formatPosCurrency } from "@rutea/shared";
 
 interface PosOrderSummaryCardProps {
@@ -10,6 +10,7 @@ interface PosOrderSummaryCardProps {
   submitError: string | null;
   isSubmitting: boolean;
   isEmpty: boolean;
+  isEditing?: boolean;
   onSubmit: () => void;
 }
 
@@ -22,6 +23,7 @@ export function PosOrderSummaryCard({
   submitError,
   isSubmitting,
   isEmpty,
+  isEditing = false,
   onSubmit,
 }: PosOrderSummaryCardProps) {
   return (
@@ -85,7 +87,12 @@ export function PosOrderSummaryCard({
           {isSubmitting ? (
             <>
               <Loader2 size={16} className="animate-spin" />
-              <span>Registrando orden...</span>
+              <span>{isEditing ? "Guardando cambios..." : "Registrando orden..."}</span>
+            </>
+          ) : isEditing ? (
+            <>
+              <Save size={16} />
+              <span>Guardar Cambios en Factura</span>
             </>
           ) : (
             <>
@@ -98,4 +105,3 @@ export function PosOrderSummaryCard({
     </div>
   );
 }
-

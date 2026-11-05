@@ -1,3 +1,6 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   MapPin,
@@ -5,6 +8,7 @@ import {
   Truck,
   CheckCircle2,
   Loader2,
+  Edit3,
 } from "lucide-react";
 import type { Order } from "@rutea/shared";
 import { formatSellerOrderTime, getSellerOrderStatusMeta } from "@/utils/reliquidation";
@@ -30,7 +34,12 @@ export function InvoiceComparisonHeader({
   isApproving,
   isAlreadyDispatched,
 }: InvoiceComparisonHeaderProps) {
+  const router = useRouter();
   const statusMeta = getSellerOrderStatusMeta(order.estado);
+  const canEditOrder =
+    order.estado === "PENDIENTE_ALISTAMIENTO" ||
+    order.estado === "EN_ALISTAMIENTO" ||
+    order.estado === "ALISTADO";
 
   return (
     <header className="sticky top-0 z-20 border-b border-border/50 bg-card/85 px-4 py-3 backdrop-blur-md sm:px-6">
@@ -68,6 +77,17 @@ export function InvoiceComparisonHeader({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {canEditOrder && (
+            <button
+              type="button"
+              onClick={() => router.push(`/facturation?editOrderId=${order.id}`)}
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border/80 bg-card px-3.5 text-xs font-semibold text-foreground shadow-2xs transition-all hover:bg-accent active:scale-[0.98]"
+            >
+              <Edit3 size={15} className="text-primary" />
+              <span>Editar / Añadir</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onPrint}
@@ -109,4 +129,3 @@ export function InvoiceComparisonHeader({
     </header>
   );
 }
-

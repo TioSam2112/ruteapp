@@ -1,3 +1,6 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import {
   Clock,
   Building2,
@@ -9,6 +12,7 @@ import {
   PackageX,
   MessageSquareWarning,
   ChevronRight,
+  Edit3,
 } from "lucide-react";
 import { formatPosCurrency, type Order } from "@rutea/shared";
 import {
@@ -41,18 +45,13 @@ function getStatusBadgeClasses(tone: SellerOrderStatusMeta["tone"]): string {
 }
 
 function StatusIcon({ tone }: { tone: SellerOrderStatusMeta["tone"] }) {
-  switch (tone) {
-    case "ready":
-      return <PackageCheck size={12} className="shrink-0" />;
-    case "delivery":
-      return <Truck size={12} className="shrink-0" />;
-    case "picking":
-    default:
-      return <Warehouse size={12} className="shrink-0" />;
-  }
+  if (tone === "ready") return <PackageCheck size={12} className="shrink-0" />;
+  if (tone === "delivery") return <Truck size={12} className="shrink-0" />;
+  return <Warehouse size={12} className="shrink-0" />;
 }
 
 export function SellerInvoiceCard({ order, isSelected, onSelect }: SellerInvoiceCardProps) {
+  const router = useRouter();
   const statusMeta = getSellerOrderStatusMeta(order.estado);
   const comparison = buildOrderReliquidationComparison(order);
   const isAlistadaOrLater =
@@ -60,16 +59,27 @@ export function SellerInvoiceCard({ order, isSelected, onSelect }: SellerInvoice
     order.estado === "LISTO_PARA_REPARTO" ||
     order.estado === "EN_RUTA" ||
     order.estado === "ENTREGADO";
+  const canEditOrder =
+    order.estado === "PENDIENTE_ALISTAMIENTO" ||
+    order.estado === "EN_ALISTAMIENTO" ||
+    order.estado === "ALISTADO";
 
   const modifiedCount = comparison.modifiedItems.length;
   const agotadosCount = comparison.agotadosItems.length;
   const notesCount = comparison.itemsWithNotes.length;
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect(order)}
-      className={`group flex w-full flex-col justify-between gap-3 rounded-2xl border p-4 text-left transition-all duration-150 ${
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect(order);
+        }
+      }}
+      className={`group flex w-full cursor-pointer flex-col justify-between gap-3 rounded-2xl border p-4 text-left transition-all duration-150 ${
         isSelected
           ? "border-primary bg-primary/[0.04] ring-2 ring-primary/20 shadow-sm"
           : "border-border/60 bg-card hover:border-primary/40 hover:shadow-xs"
@@ -172,12 +182,26 @@ export function SellerInvoiceCard({ order, isSelected, onSelect }: SellerInvoice
           )}
         </div>
 
-        <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-primary group-hover:translate-x-0.5 transition-transform">
-          <span>Revisar</span>
-          <ChevronRight size={14} />
-        </span>
+        <div className="flex items-center gap-2">
+          {canEditOrder && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/facturation?editOrderId=${order.id}`);
+              }}
+              className="inline-flex items-center gap-1 rounded-xl border border-border/80 bg-background px-2.5 py-1 text-[11px] font-semibold text-foreground transition-colors hover:border-primary/40 hover:bg-accent active:scale-95"
+            >
+              <Edit3 size={12} className="text-primary" />
+              <span>Editar / Añadir</span>
+            </button>
+          )}
+          <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-primary group-hover:translate-x-0.5 transition-transform">
+            <span>Revisar</span>
+            <ChevronRight size={14} />
+          </span>
+        </div>
       </div>
-    </button>
+    </div>
   );
 }
-

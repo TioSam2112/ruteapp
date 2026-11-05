@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ReceiptText,
@@ -10,16 +10,23 @@ import {
   ClipboardCheck,
   Loader2,
 } from "lucide-react";
-import { getCurrentUserProfile } from "@rutea/shared";
+import { getCurrentUserProfile, getOrderById } from "@rutea/shared";
 import { PosInterface } from "@/components/facturation/PosInterface";
-import type { UserProfile } from "@rutea/shared";
+import type { Order, UserProfile } from "@rutea/shared";
 import type { Client } from "@/types/client";
 
 export function FacturationPosView() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editOrderId = searchParams.get("editOrderId");
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [checking, setChecking] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
+  const [fetchedEditState, setFetchedEditState] = useState<{
+    requestedId: string;
+    order: Order | null;
+  } | null>(null);
 
   useEffect(() => {
     getCurrentUserProfile().then((p) => {
@@ -32,16 +39,67 @@ export function FacturationPosView() {
     });
   }, [router]);
 
+  useEffect(() => {
+    if (!editOrderId) return;
+    let active = true;
+
+    getOrderById(editOrderId)
+      .then((order) => {
+        if (!active) return;
+        const canEdit =
+          order &&
+          (order.estado === "PENDIENTE_ALISTAMIENTO" ||
+            order.estado === "EN_ALISTAMIENTO" ||
+            order.estado === "ALISTADO");
+        setFetchedEditState({
+          requestedId: editOrderId,
+          order: canEdit ? order : null,
+        });
+      })
+      .catch(() => {
+        if (!active) return;
+        setFetchedEditState({
+          requestedId: editOrderId,
+          order: null,
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [editOrderId]);
+
+  const loadingOrder =
+    Boolean(editOrderId) && fetchedEditState?.requestedId !== editOrderId;
+  const editingOrder =
+    editOrderId && fetchedEditState?.requestedId === editOrderId
+      ? fetchedEditState.order
+      : null;
+
   const handleClientCreated = (newClient: Client) => {
     setClients((prev) => [newClient, ...prev.filter((c) => c.id !== newClient.id)]);
   };
 
-  if (checking) {
+  const handleCancelEdit = () => {
+    setFetchedEditState(null);
+    if (editOrderId) {
+      router.replace("/facturation");
+    }
+  };
+
+  const handleBackToInvoices = () => {
+    setFetchedEditState(null);
+    router.push("/facturation/invoices");
+  };
+
+  if (checking || loadingOrder) {
     return (
       <div className="flex flex-1 items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3 text-muted-foreground">
           <Loader2 className="h-7 w-7 animate-spin text-primary" />
-          <span className="text-xs">Cargando terminal POS...</span>
+          <span className="text-xs">
+            {loadingOrder ? "Cargando factura para edición..." : "Cargando terminal POS..."}
+          </span>
         </div>
       </div>
     );
@@ -61,7 +119,7 @@ export function FacturationPosView() {
               Rutea POS
             </span>
             <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
-              Preventa Activa
+              {editingOrder ? `Editando #${editingOrder.facturaNumber}` : "Preventa Activa"}
             </span>
           </div>
         </div>
@@ -105,9 +163,11 @@ export function FacturationPosView() {
           clients={clients}
           onClientCreated={handleClientCreated}
           onClientsLoaded={setClients}
+          editingOrder={editingOrder}
+          onCancelEdit={handleCancelEdit}
+          onBackToInvoices={handleBackToInvoices}
         />
       </div>
     </div>
   );
 }
-

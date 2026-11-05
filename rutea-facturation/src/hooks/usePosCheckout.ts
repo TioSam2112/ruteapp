@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createOrder, useEscapeKey } from "@rutea/shared";
+import { createOrder, updateOrderFromFacturation, useEscapeKey } from "@rutea/shared";
 import type { ClientOrderData, Order, OrderItem, UserProfile } from "@rutea/shared";
 import { DEFAULT_CONSUMIDOR_FINAL } from "@/constants/clients";
 
@@ -12,6 +12,11 @@ interface UsePosCheckoutParams {
   totalTax: number;
   total: number;
   onResetCart: () => void;
+  editingOrder?: Order | null;
+  clientData?: ClientOrderData & { id: string };
+  setClientData?: (client: ClientOrderData & { id: string }) => void;
+  generalObservation?: string;
+  setGeneralObservation?: (value: string) => void;
 }
 
 export function usePosCheckout({
@@ -21,14 +26,24 @@ export function usePosCheckout({
   totalTax,
   total,
   onResetCart,
+  editingOrder = null,
+  clientData: externalClientData,
+  setClientData: externalSetClientData,
+  generalObservation: externalObservation,
+  setGeneralObservation: externalSetObservation,
 }: UsePosCheckoutParams) {
-  const [clientData, setClientData] = useState<ClientOrderData & { id: string }>(
+  const [internalClientData, setInternalClientData] = useState<ClientOrderData & { id: string }>(
     DEFAULT_CONSUMIDOR_FINAL
   );
-  const [generalObservation, setGeneralObservation] = useState("");
+  const [internalObservation, setInternalObservation] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const clientData = externalClientData ?? internalClientData;
+  const setClientData = externalSetClientData ?? setInternalClientData;
+  const generalObservation = externalObservation ?? internalObservation;
+  const setGeneralObservation = externalSetObservation ?? setInternalObservation;
 
   const handleResetOrder = () => {
     setGeneralObservation("");
@@ -49,30 +64,53 @@ export function usePosCheckout({
     setIsSubmitting(true);
     setSubmitError(null);
 
-    try {
-      const created = await createOrder({
-        facturaNumber: "",
-        id_cliente: clientData.id,
-        clientData: {
-          nombre: clientData.nombre,
-          nit: clientData.nit,
-          telefono: clientData.telefono,
-          direccion: clientData.direccion,
-          ciudad: clientData.ciudad,
-        },
-        id_vendedor: currentUser.uid,
-        vendedorNombre: currentUser.nombre
-          ? `${currentUser.nombre} ${currentUser.apellido ?? ""}`.trim()
-          : currentUser.email,
-        items: orderItems,
-        generalObservation: generalObservation.trim() || undefined,
-        totalBase,
-        totalTax,
-        total,
-        estado: "PENDIENTE_ALISTAMIENTO",
-      });
+    const sellerName = currentUser.nombre
+      ? `${currentUser.nombre} ${currentUser.apellido ?? ""}`.trim()
+      : currentUser.email;
 
-      setCompletedOrder(created);
+    const normalizedClientData: ClientOrderData = {
+      nombre: clientData.nombre,
+      nit: clientData.nit,
+      telefono: clientData.telefono,
+      direccion: clientData.direccion,
+      ciudad: clientData.ciudad,
+    };
+
+    try {
+      if (editingOrder) {
+        const updated = await updateOrderFromFacturation(
+          editingOrder.id,
+          {
+            id_cliente: clientData.id,
+            clientData: normalizedClientData,
+            items: orderItems,
+            generalObservation: generalObservation.trim() || undefined,
+            totalBase,
+            totalTax,
+            total,
+          },
+          {
+            uid: currentUser.uid,
+            userName: sellerName,
+          }
+        );
+        setCompletedOrder(updated);
+      } else {
+        const created = await createOrder({
+          facturaNumber: "",
+          id_cliente: clientData.id,
+          clientData: normalizedClientData,
+          id_vendedor: currentUser.uid,
+          vendedorNombre: sellerName,
+          items: orderItems,
+          generalObservation: generalObservation.trim() || undefined,
+          totalBase,
+          totalTax,
+          total,
+          estado: "PENDIENTE_ALISTAMIENTO",
+        });
+        setCompletedOrder(created);
+      }
     } catch (err: unknown) {
       const error = err as { message?: string };
       setSubmitError(error?.message || "Ocurrió un error al persistir la orden en Firestore.");
@@ -93,4 +131,3 @@ export function usePosCheckout({
     handleCompleteOrder,
   };
 }
-

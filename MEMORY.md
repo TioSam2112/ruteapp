@@ -74,13 +74,12 @@ Final directory structure and exports under `shared/` (`index.ts`):
 
 ## 3. CURRENT PROJECT STATUS & NEXT MODULE (`rutea-delivery`)
 
-- **Current Status — Invoice Editing, Client Creation & Picking History/Reopen (Phase 2 of 5 Completed):**
+- **Current Status — Invoice Editing, Client Creation & Picking History/Reopen (Phase 3 of 5 Completed):**
   - **Phase 1:** Firestore rules updated for `clients` and `hasPostPickingAdditions`. Types extended in `@rutea/shared`. `updateOrderFromFacturation`, `subscribeToFulfillmentOrders`, and `reopenOrderFulfillment` implemented.
-  - **Phase 2:** Direct client creation integrated into POS view (`/facturation`):
-    - Updated `ClientForm` and `ClientModal` to return newly created `Client` in `onSuccess(createdClient)`.
-    - Modularized client selection in `rutea-facturation` by extracting `ClientSearchModal` (<150 lines) with empty-state action button.
-    - Added accessible `+ Nuevo Cliente` trigger (with `UserPlus`) in `ClientSelectorFact` header bar and inside search modal.
-    - Auto-assigns newly created client immediately to the active POS invoice in `ClientSelectorFact` and propagates state through `PosInterface` and `FacturationPosView`.
-- **Next Steps (Phases 3–5):**
-  - Phase 3: Invoice editing UI in `rutea-facturation`.
+  - **Phase 2:** Direct client creation integrated into POS view (`/facturation`) with `ClientSearchModal`, `+ Nuevo Cliente` trigger in `ClientSelectorFact`, and automatic selection of the newly created client.
+  - **Phase 3:** Invoice editing enabled in `rutea-facturation`:
+    - Added `"Editar / Añadir"` secondary action button in `InvoiceComparisonHeader.tsx` and `SellerInvoiceCard.tsx` for orders in `'PENDIENTE_ALISTAMIENTO'`, `'EN_ALISTAMIENTO'`, or `'ALISTADO'`, redirecting to `/facturation?editOrderId=${order.id}`.
+    - Extended `usePosCart.ts` with `loadOrderForEdit(order, availableClients)` and `usePosCheckout.ts` with `editingOrder` support calling `updateOrderFromFacturation`.
+    - Integrated `editOrderId` query param loading in `FacturationPosView.tsx`, added Apple HIG edit mode banner with warehouse status and cancel action in `PosInterface.tsx`, updated `PosOrderSummaryCard.tsx` button label to `"Guardar Cambios en Factura"`, and added return navigation to `/facturation/invoices` in `PosOrderSuccessModal.tsx`.
+- **Next Steps (Phases 4–5):**
   - Phases 4–5: Picking history, reopen, and post-picking addition badges in `rutea-fulfillment`.
