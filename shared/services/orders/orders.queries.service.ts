@@ -4,6 +4,7 @@ import {
   getDoc,
   getDocs,
   query,
+  where,
   orderBy,
   limit,
   onSnapshot,
@@ -36,6 +37,35 @@ export function subscribeOrders(
   );
 }
 
+export function subscribeToFulfillmentOrders(
+  callback: (orders: Order[]) => void,
+  onError?: (error: Error) => void
+): Unsubscribe {
+  const q = query(
+    collection(db, ORDERS_COLLECTION),
+    where("estado", "in", [
+      "PENDIENTE_ALISTAMIENTO",
+      "EN_ALISTAMIENTO",
+      "ALISTADO",
+      "LISTO_PARA_REPARTO",
+    ])
+  );
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const orders = snapshot.docs
+        .map((d) => mapOrderDoc(d.id, d.data()))
+        .sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      callback(orders);
+    },
+    (err) => onError?.(err)
+  );
+}
+
 export async function generateNextFacturaNumber(): Promise<string> {
   try {
     const ordersRef = collection(db, ORDERS_COLLECTION);
@@ -62,4 +92,3 @@ export async function generateNextFacturaNumber(): Promise<string> {
     return `FAC-${Date.now().toString().slice(-6)}`;
   }
 }
-

@@ -1,13 +1,4 @@
-import {
-  collection,
-  doc,
-  getDoc,
-  updateDoc,
-  query,
-  where,
-  onSnapshot,
-  type Unsubscribe,
-} from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import type {
   ItemPickingStatus,
@@ -25,30 +16,9 @@ import {
   sanitizeOrderItem,
 } from "./orders.helpers";
 import { resolvePickingAction } from "./orders.picking.helpers";
+import { subscribeToFulfillmentOrders } from "./orders.queries.service";
 
-export function subscribeToFulfillmentOrders(
-  callback: (orders: Order[]) => void,
-  onError?: (error: Error) => void
-): Unsubscribe {
-  const q = query(
-    collection(db, ORDERS_COLLECTION),
-    where("estado", "in", ["PENDIENTE_ALISTAMIENTO", "EN_ALISTAMIENTO"])
-  );
-
-  return onSnapshot(
-    q,
-    (snapshot) => {
-      const orders = snapshot.docs
-        .map((d) => mapOrderDoc(d.id, d.data()))
-        .sort(
-          (a, b) =>
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        );
-      callback(orders);
-    },
-    (err) => onError?.(err)
-  );
-}
+export { subscribeToFulfillmentOrders };
 
 export async function updateOrderItemPicking(
   orderId: string,

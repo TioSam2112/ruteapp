@@ -44,6 +44,7 @@ service cloud.firestore {
           'generalObservationChecked',
           'generalObservationAudit',
           'reliquidation',
+          'hasPostPickingAdditions',
           'updatedAt'
         ])
         && request.resource.data.estado in ['PENDIENTE_ALISTAMIENTO', 'EN_ALISTAMIENTO', 'ALISTADO']
@@ -56,6 +57,9 @@ service cloud.firestore {
         ))
         && (!('generalObservationChecked' in request.resource.data) || (
           request.resource.data.generalObservationChecked is bool
+        ))
+        && (!('hasPostPickingAdditions' in request.resource.data) || (
+          request.resource.data.hasPostPickingAdditions is bool
         ))
         && (!('generalObservationAudit' in request.resource.data) || (
           request.resource.data.generalObservationAudit is map
@@ -96,8 +100,8 @@ service cloud.firestore {
 
     match /clients/{clientId} {
       allow read: if isAuthenticated();
-      allow create: if isAdmin() || isFacturation();
-      allow update, delete: if isAdmin();
+      allow create, update: if isAdmin() || isFacturation();
+      allow delete: if isAdmin();
     }
 
     match /orders/{orderId} {

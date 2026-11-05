@@ -96,8 +96,8 @@ export function sanitizeOrderItem(item: OrderItem): OrderItem {
     subtotal: Number(item.subtotal),
   };
 
-  if (item.observationItem !== undefined) {
-    sanitized.observationItem = item.observationItem;
+  if (item.observationItem !== undefined && item.observationItem.trim() !== "") {
+    sanitized.observationItem = item.observationItem.trim();
   }
   if (item.pickingStatus !== undefined) {
     sanitized.pickingStatus = item.pickingStatus;
@@ -110,6 +110,15 @@ export function sanitizeOrderItem(item: OrderItem): OrderItem {
   }
   if (item.lastPickedBy !== undefined) {
     sanitized.lastPickedBy = item.lastPickedBy;
+  }
+  if (item.isAddedAfterCreation !== undefined) {
+    sanitized.isAddedAfterCreation = Boolean(item.isAddedAfterCreation);
+  }
+  if (item.previousQuantity !== undefined) {
+    sanitized.previousQuantity = Number(item.previousQuantity);
+  }
+  if (item.addedAt !== undefined) {
+    sanitized.addedAt = item.addedAt;
   }
 
   return sanitized;
@@ -132,4 +141,3 @@ export function buildSyncedObsAudit(
     timestamp: audit.timestamp || now,
   };
 }
-

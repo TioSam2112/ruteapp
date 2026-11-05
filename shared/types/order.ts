@@ -20,6 +20,13 @@ export interface PickingAuditUser {
   userName: string;
 }
 
+export interface OrderSellerEditAudit {
+  uid: string;
+  userName: string;
+  timestamp: string;
+  summary: string;
+}
+
 export interface OrderItemPickingPatch {
   pickingStatus?: ItemPickingStatus;
   cantidadAlistada?: number;
@@ -40,6 +47,9 @@ export interface OrderItem {
   cantidadAlistada?: number;
   pickerNote?: string;
   lastPickedBy?: PickingAuditLog;
+  isAddedAfterCreation?: boolean;
+  previousQuantity?: number;
+  addedAt?: string;
 }
 
 export interface ClientOrderData {
@@ -85,9 +95,21 @@ export interface Order {
   total: number;
   initialTotal?: number;
   reliquidation?: OrderReliquidationSummary;
+  hasPostPickingAdditions?: boolean;
+  lastSellerEdit?: OrderSellerEditAudit;
   estado: OrderStatus;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface UpdateOrderFacturationPayload {
+  id_cliente: string;
+  clientData: ClientOrderData;
+  items: OrderItem[];
+  generalObservation?: string;
+  totalBase: number;
+  totalTax: number;
+  total: number;
 }
 
 export type CreateOrderData = Omit<Order, "id" | "createdAt" | "updatedAt">;
