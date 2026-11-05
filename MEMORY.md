@@ -115,12 +115,18 @@ Next.js application (`rutea-fulfillment/src/`) dedicated to real-time warehouse 
 
 ---
 
-## 5. NEXT MODULE ARCHITECTURE & STANDARDS (`rutea-delivery`)
+## 5. CURRENT `rutea-delivery` INVENTORY & ORGANIZATION
 
-The upcoming third application in the monorepo (`rutea-delivery`) will handle last-mile delivery routes and cash reconciliation. When built, it must follow these exact structural rules:
+Next.js application (`rutea-delivery/src/`) dedicated to last-mile delivery routes by population, delivery confirmation, collections, cash reconciliation, and logistics administration. It must strictly preserve this layered organization:
 
-1. **`@rutea/shared` Integration:**
-   - Reuse `LoginForm`, `UsersView`, `Tooltip`, `useEscapeKey`, and the centralized Firebase instance from `@rutea/shared`.
-   - Extend `shared/types/order.ts` and create `shared/services/orders/orders.delivery.service.ts` for delivery-specific operations (subscribing to `'LISTO_PARA_REPARTO'` orders, recording payment methods `EFECTIVO | TRANSFERENCIA | CREDITO`, logging delivery returns/incidents, and transitioning orders to `'ENTREGADO'`).
-2. **Strict Layered Organization in `rutea-delivery/src/`:**
-   - Maintain strict separation across `app/`, `components/`, `hooks/`, `constants/`, `schemas/`, `types/`, and `utils/`, keeping all `.tsx` files under 180–200 lines and completely decoupled from direct Firestore calls or inline business math.
+- **`app/` (Routes & Protected Layouts)**
+  - `app/page.tsx`: Login view consuming `@rutea/shared` `LoginForm` for `'admin'` and `'delivery'` roles (`'admin' -> '/admin'`, `'delivery' -> '/delivery'`).
+  - `app/delivery/`: Protected header layout (`layout.tsx`) verifying `'admin'` or `'delivery'` roles, and delivery workspace view (`page.tsx`).
+  - `app/admin/`: Admin layout (`layout.tsx`), delivery overview (`page.tsx`), and shared users management (`users/page.tsx`) consuming `UsersView` directly from `@rutea/shared`.
+- **`components/`**
+  - `components/admin/`: `Sidebar.tsx` (collapsible sidebar consuming `Tooltip` and `logout` from `@rutea/shared`).
+- **`constants/`**
+  - `constants/navigation.ts`: `ADMIN_NAV_GROUPS`, `NavItem`, `NavGroup`.
+- **Upcoming Operational Layer (`@rutea/shared` & `rutea-delivery/src/`):**
+  - Extend `shared/types/order.ts` and create `shared/services/orders/orders.delivery.service.ts` for subscribing to `'LISTO_PARA_REPARTO'` orders, recording payment methods (`EFECTIVO | TRANSFERENCIA | CREDITO`), logging delivery returns/incidents, and transitioning orders to `'ENTREGADO'`.
+  - Maintain strict separation across `app/`, `components/`, `hooks/`, `constants/`, `schemas/`, `types/`, and `utils/`, keeping all `.tsx` files under 180–200 lines and completely decoupled from direct Firestore calls or inline business math.

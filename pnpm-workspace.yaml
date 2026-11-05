@@ -1,6 +1,7 @@
 packages:
   - "rutea-facturation"
   - "rutea-fulfillment"
+  - "rutea-delivery"
   - "shared"
 allowBuilds:
   '@firebase/util': true
