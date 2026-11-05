@@ -74,10 +74,13 @@ Final directory structure and exports under `shared/` (`index.ts`):
 
 ## 3. CURRENT PROJECT STATUS & NEXT MODULE (`rutea-delivery`)
 
-- **Current Status — Invoice Editing, Client Creation & Picking History/Reopen (Phase 1 of 5 Completed):**
-  - Updated `/firestore.rules` to allow `facturation` and `admin` roles to create and update `clients/{clientId}` (`allow create, update: if isAdmin() || isFacturation();`) and allowed `hasPostPickingAdditions` in `isValidPickerOrderUpdate()`.
-  - Extended `shared/types/order.ts` with `OrderSellerEditAudit`, `UpdateOrderFacturationPayload`, post-creation item tracking fields (`isAddedAfterCreation`, `previousQuantity`, `addedAt`), and order-level flags (`hasPostPickingAdditions`, `lastSellerEdit`).
-  - Implemented `updateOrderFromFacturation` in `@rutea/shared` with smart item merging that preserves warehouse progress for unchanged items while flagging new/modified items as `'PENDIENTE_REVISION'`.
-  - Updated `subscribeToFulfillmentOrders` to include `'ALISTADO'` and `'LISTO_PARA_REPARTO'`, updated `completeOrderFulfillment` to clear `hasPostPickingAdditions: false`, and implemented `reopenOrderFulfillment`.
-- **Next Steps (Phases 2–5):**
-  - Connect client creation and invoice editing UI in `rutea-facturation`, and picking history / reopen / post-picking addition badges in `rutea-fulfillment`.
+- **Current Status — Invoice Editing, Client Creation & Picking History/Reopen (Phase 2 of 5 Completed):**
+  - **Phase 1:** Firestore rules updated for `clients` and `hasPostPickingAdditions`. Types extended in `@rutea/shared`. `updateOrderFromFacturation`, `subscribeToFulfillmentOrders`, and `reopenOrderFulfillment` implemented.
+  - **Phase 2:** Direct client creation integrated into POS view (`/facturation`):
+    - Updated `ClientForm` and `ClientModal` to return newly created `Client` in `onSuccess(createdClient)`.
+    - Modularized client selection in `rutea-facturation` by extracting `ClientSearchModal` (<150 lines) with empty-state action button.
+    - Added accessible `+ Nuevo Cliente` trigger (with `UserPlus`) in `ClientSelectorFact` header bar and inside search modal.
+    - Auto-assigns newly created client immediately to the active POS invoice in `ClientSelectorFact` and propagates state through `PosInterface` and `FacturationPosView`.
+- **Next Steps (Phases 3–5):**
+  - Phase 3: Invoice editing UI in `rutea-facturation`.
+  - Phases 4–5: Picking history, reopen, and post-picking addition badges in `rutea-fulfillment`.

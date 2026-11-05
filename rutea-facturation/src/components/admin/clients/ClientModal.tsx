@@ -10,7 +10,7 @@ interface ClientModalProps {
   isOpen: boolean;
   onClose: () => void;
   clientToEdit?: Client | null;
-  onSuccess?: () => void;
+  onSuccess?: (client?: Client) => void;
 }
 
 export function ClientModal({
@@ -23,13 +23,13 @@ export function ClientModal({
 
   if (!isOpen || typeof document === "undefined") return null;
 
-  const handleSuccess = () => {
-    if (onSuccess) onSuccess();
+  const handleSuccess = (client?: Client) => {
+    if (onSuccess) onSuccess(client);
     onClose();
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4">
       <div
         className="fixed inset-0 bg-foreground/20 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
         onClick={onClose}

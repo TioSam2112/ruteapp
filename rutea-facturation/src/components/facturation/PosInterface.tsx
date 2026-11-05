@@ -9,12 +9,21 @@ import { PosOrderSuccessModal } from "@/components/facturation/PosOrderSuccessMo
 import { usePosCart } from "@/hooks/usePosCart";
 import { usePosCheckout } from "@/hooks/usePosCheckout";
 import type { UserProfile } from "@rutea/shared";
+import type { Client } from "@/types/client";
 
 interface PosInterfaceProps {
   currentUser: UserProfile;
+  clients?: Client[];
+  onClientCreated?: (newClient: Client) => void;
+  onClientsLoaded?: (clients: Client[]) => void;
 }
 
-export function PosInterface({ currentUser }: PosInterfaceProps) {
+export function PosInterface({
+  currentUser,
+  clients,
+  onClientCreated,
+  onClientsLoaded,
+}: PosInterfaceProps) {
   const cart = usePosCart();
   const checkout = usePosCheckout({
     currentUser,
@@ -30,6 +39,9 @@ export function PosInterface({ currentUser }: PosInterfaceProps) {
       <ClientSelectorFact
         selectedClient={checkout.clientData}
         onSelectClient={checkout.setClientData}
+        onClientCreated={onClientCreated}
+        initialClients={clients}
+        onClientsLoaded={onClientsLoaded}
       />
 
       <PosProductSearchBar

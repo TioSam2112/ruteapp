@@ -1,21 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import {
-  User,
-  Store,
-  MapPin,
-  Phone,
-  Search,
-  X,
-  Check,
-  RotateCcw,
-  Users,
-} from "lucide-react";
+import { User, Store, MapPin, Phone, RotateCcw, Users, UserPlus } from "lucide-react";
 import { getClients } from "@/services/clients.service";
-import { searchClients } from "@/utils/client";
-import { useEscapeKey } from "@rutea/shared";
 import { DEFAULT_CONSUMIDOR_FINAL } from "@/constants/clients";
+import { ClientModal } from "@/components/admin/clients/ClientModal";
+import { ClientSearchModal } from "@/components/facturation/ClientSearchModal";
 import type { Client } from "@/types/client";
 import type { ClientOrderData } from "@rutea/shared";
 
@@ -24,20 +14,25 @@ export { DEFAULT_CONSUMIDOR_FINAL };
 interface ClientSelectorFactProps {
   selectedClient: ClientOrderData & { id: string };
   onSelectClient: (client: ClientOrderData & { id: string }) => void;
+  onClientCreated?: (newClient: Client) => void;
+  initialClients?: Client[];
+  onClientsLoaded?: (clients: Client[]) => void;
 }
 
 export function ClientSelectorFact({
   selectedClient,
   onSelectClient,
+  onClientCreated,
+  initialClients,
+  onClientsLoaded,
 }: ClientSelectorFactProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [clients, setClients] = useState<Client[]>([]);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [clients, setClients] = useState<Client[]>(initialClients ?? []);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
 
   const isDefault = selectedClient.id === DEFAULT_CONSUMIDOR_FINAL.id;
-
-  useEscapeKey(isModalOpen, () => setIsModalOpen(false));
 
   const handleOpenModal = async () => {
     setIsModalOpen(true);
@@ -47,6 +42,7 @@ export function ClientSelectorFact({
       try {
         const data = await getClients();
         setClients(data);
+        onClientsLoaded?.(data);
       } finally {
         setLoading(false);
       }
@@ -70,7 +66,22 @@ export function ClientSelectorFact({
     setIsModalOpen(false);
   };
 
-  const filteredClients = searchClients(clients, search);
+  const handleClientCreated = (newClient?: Client) => {
+    if (!newClient) return;
+
+    setClients((prev) => [newClient, ...prev.filter((c) => c.id !== newClient.id)]);
+    onSelectClient({
+      id: newClient.id,
+      nombre: newClient.nombreComercio ? `${newClient.nombreComercio} (${newClient.nombre})` : newClient.nombre,
+      nit: "",
+      telefono: newClient.telefono,
+      direccion: newClient.direccion,
+      ciudad: newClient.ciudad,
+    });
+    onClientCreated?.(newClient);
+    setIsCreateModalOpen(false);
+    setIsModalOpen(false);
+  };
 
   return (
     <>
@@ -81,46 +92,28 @@ export function ClientSelectorFact({
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm text-foreground truncate">
-                {selectedClient.nombre}
-              </span>
+              <span className="font-semibold text-sm text-foreground truncate">{selectedClient.nombre}</span>
               {isDefault ? (
-                <span className="rounded-md bg-accent px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
-                  NIT: {selectedClient.nit}
-                </span>
-              ) : (
-                selectedClient.ciudad && (
-                  <span className="rounded-md bg-accent px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                    {selectedClient.ciudad}
-                  </span>
-                )
+                <span className="rounded-md bg-accent px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">NIT: {selectedClient.nit}</span>
+              ) : selectedClient.ciudad && (
+                <span className="rounded-md bg-accent px-1.5 py-0.5 text-[10px] text-muted-foreground">{selectedClient.ciudad}</span>
               )}
             </div>
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 truncate">
-              {selectedClient.telefono && (
-                <span className="flex items-center gap-1">
-                  <Phone size={11} /> {selectedClient.telefono}
-                </span>
-              )}
-              {selectedClient.direccion && (
-                <span className="flex items-center gap-1 truncate">
-                  <MapPin size={11} /> {selectedClient.direccion}
-                </span>
-              )}
-              {isDefault && (
-                <span>Venta general en mostrador</span>
-              )}
+              {selectedClient.telefono && <span className="flex items-center gap-1"><Phone size={11} /> {selectedClient.telefono}</span>}
+              {selectedClient.direccion && <span className="flex items-center gap-1 truncate"><MapPin size={11} /> {selectedClient.direccion}</span>}
+              {isDefault && <span>Venta general en mostrador</span>}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           {!isDefault && (
             <button
               type="button"
               onClick={handleResetToDefault}
-              className="inline-flex items-center gap-1 rounded-xl border border-border/80 px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              className="inline-flex items-center gap-1 rounded-xl border border-border/80 px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground active:scale-95"
               title="Restablecer a Consumidor Final"
             >
               <RotateCcw size={13} />
@@ -136,128 +129,37 @@ export function ClientSelectorFact({
             <Users size={14} className="text-primary" />
             <span>{isDefault ? "Asignar Cliente" : "Cambiar"}</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setIsCreateModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 active:scale-95"
+            title="Crear un nuevo cliente"
+          >
+            <UserPlus size={14} />
+            <span>+ Nuevo Cliente</span>
+          </button>
         </div>
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-          <div
-            className="fixed inset-0 bg-foreground/20 backdrop-blur-sm transition-opacity"
-            onClick={() => setIsModalOpen(false)}
-            aria-hidden="true"
-          />
+      <ClientSearchModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        clients={clients}
+        loading={loading}
+        search={search}
+        onSearchChange={setSearch}
+        selectedClientId={selectedClient.id}
+        onSelectClient={handleSelect}
+        onResetToDefault={handleResetToDefault}
+        onOpenCreateModal={() => setIsCreateModalOpen(true)}
+      />
 
-          <div
-            role="dialog"
-            aria-modal="true"
-            className="relative z-10 w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl border border-border/80 bg-card p-5 shadow-2xl transition-all"
-          >
-            <div className="flex items-center justify-between pb-3 border-b border-border/40">
-              <div>
-                <h3 className="text-base font-semibold text-foreground">
-                  Seleccionar Cliente de la Orden
-                </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Elige un cliente registrado o mantén Consumidor Final.
-                </p>
-              </div>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="pt-3 pb-2 space-y-2">
-              <div className="relative">
-                <Search
-                  size={15}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar cliente por nombre, comercio o ciudad..."
-                  autoFocus
-                  className="w-full rounded-xl border border-border bg-input pl-9 pr-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-
-              <div className="flex items-center justify-between pt-1">
-                <button
-                  type="button"
-                  onClick={handleResetToDefault}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-accent/40 px-2.5 py-1 text-xs font-medium text-foreground hover:bg-accent"
-                >
-                  <User size={13} className="text-primary" />
-                  <span>Usar Consumidor Final (222222222222)</span>
-                </button>
-                <span className="text-[11px] text-muted-foreground">
-                  {filteredClients.length} clientes encontrados
-                </span>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto divide-y divide-border/30 mt-2 pr-1">
-              {loading ? (
-                <div className="py-8 text-center text-xs text-muted-foreground">
-                  Cargando directorio de clientes...
-                </div>
-              ) : filteredClients.length === 0 ? (
-                <div className="py-8 text-center text-xs text-muted-foreground">
-                  No se encontraron clientes registrados con ese término.
-                </div>
-              ) : (
-                filteredClients.map((c) => {
-                  const isCurrent = selectedClient.id === c.id;
-                  return (
-                    <div
-                      key={c.id}
-                      onClick={() => handleSelect(c)}
-                      className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-colors ${
-                        isCurrent
-                          ? "bg-primary/10 border border-primary/20"
-                          : "hover:bg-accent/40"
-                      }`}
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-xs text-foreground truncate">
-                            {c.nombreComercio || c.nombre}
-                          </p>
-                          {c.nombreComercio && (
-                            <span className="text-[11px] text-muted-foreground truncate">
-                              ({c.nombre})
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
-                          <span>{c.ciudad}</span>
-                          {c.telefono && <span>• {c.telefono}</span>}
-                          {c.direccion && <span className="truncate">• {c.direccion}</span>}
-                        </div>
-                      </div>
-
-                      {isCurrent ? (
-                        <Check size={16} className="text-primary shrink-0 ml-2" />
-                      ) : (
-                        <button
-                          type="button"
-                          className="text-[11px] font-medium text-primary hover:underline shrink-0 ml-2"
-                        >
-                          Seleccionar
-                        </button>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <ClientModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleClientCreated}
+      />
     </>
   );
 }

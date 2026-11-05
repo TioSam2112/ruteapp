@@ -22,7 +22,7 @@ import type { Client } from "@/types/client";
 
 interface ClientFormProps {
   clientToEdit?: Client | null;
-  onSuccess: () => void;
+  onSuccess: (client?: Client) => void;
   onCancel: () => void;
 }
 
@@ -85,7 +85,7 @@ export function ClientForm({
           ciudad: values.ciudad,
         });
       } else {
-        await createClient({
+        const createdClient = await createClient({
           nombre: values.nombre,
           nombreComercio: values.nombreComercio || undefined,
           telefono: values.telefono,
@@ -93,6 +93,8 @@ export function ClientForm({
           direccion: values.direccion,
           ciudad: values.ciudad,
         });
+        onSuccess(createdClient);
+        return;
       }
       onSuccess();
     } catch (err: unknown) {

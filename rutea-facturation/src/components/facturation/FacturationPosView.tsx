@@ -13,11 +13,13 @@ import {
 import { getCurrentUserProfile } from "@rutea/shared";
 import { PosInterface } from "@/components/facturation/PosInterface";
 import type { UserProfile } from "@rutea/shared";
+import type { Client } from "@/types/client";
 
 export function FacturationPosView() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [checking, setChecking] = useState(true);
+  const [clients, setClients] = useState<Client[]>([]);
 
   useEffect(() => {
     getCurrentUserProfile().then((p) => {
@@ -29,6 +31,10 @@ export function FacturationPosView() {
       setChecking(false);
     });
   }, [router]);
+
+  const handleClientCreated = (newClient: Client) => {
+    setClients((prev) => [newClient, ...prev.filter((c) => c.id !== newClient.id)]);
+  };
 
   if (checking) {
     return (
@@ -94,7 +100,12 @@ export function FacturationPosView() {
       </header>
 
       <div className="flex-1">
-        <PosInterface currentUser={profile} />
+        <PosInterface
+          currentUser={profile}
+          clients={clients}
+          onClientCreated={handleClientCreated}
+          onClientsLoaded={setClients}
+        />
       </div>
     </div>
   );
