@@ -124,7 +124,7 @@ Next.js application (`rutea-delivery/src/`) dedicated to last-mile delivery rout
 - **`app/` (Routes & Protected Layouts)**
   - `app/page.tsx`: Login view consuming `@rutea/shared` `LoginForm` for `'admin'` and `'delivery'` roles (`'admin' -> '/admin'`, `'delivery' -> '/delivery'`).
   - `app/delivery/`: Protected header layout (`layout.tsx`) verifying `'admin'` or `'delivery'` roles, and delivery workspace view (`page.tsx`).
-  - `app/admin/`: Admin layout (`layout.tsx`), dispatch & route sessions dashboard (`page.tsx` rendering `DispatchDashboard`), and shared users management (`users/page.tsx`) consuming `UsersView` directly from `@rutea/shared`.
+  - `app/admin/`: Admin layout (`layout.tsx`), delivery operations overview dashboard (`page.tsx`), dispatch & route assignment workspace (`dispatch/page.tsx` rendering `DispatchDashboard`), routes shortcut redirect (`routes/page.tsx`), and shared users management (`users/page.tsx`) consuming `UsersView` directly from `@rutea/shared`.
 - **`components/`**
   - `components/admin/`: `Sidebar.tsx` (collapsible sidebar consuming `Tooltip` and `logout` from `@rutea/shared`), and `dispatch/` (`DispatchDashboard.tsx`, `DispatchCityGroupCard.tsx`, `DispatchStickyBottomBar.tsx`, `ActiveSessionsPanel.tsx`, `ReadOnlyInvoiceDetailModal.tsx`, `ReadOnlyInvoiceItemsList.tsx`, `CreateRouteSessionModal.tsx`).
 - **`hooks/`, `constants/`, `types/`, `utils/`**

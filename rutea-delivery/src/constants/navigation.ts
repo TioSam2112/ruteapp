@@ -32,7 +32,7 @@ export const ADMIN_NAV_GROUPS: readonly NavGroup[] = [
     title: "Gestión de Preventa",
     items: [
       { label: "Clientes", href: "/admin/clients", icon: Building2 },
-      { label: "Rutas & Poblaciones", href: "/admin/routes", icon: MapPin },
+      { label: "Rutas & Poblaciones", href: "/admin/dispatch", icon: MapPin },
       { label: "Catálogo de Productos", href: "/admin/products", icon: Package },
     ],
   },
