@@ -81,6 +81,16 @@ service cloud.firestore {
         && request.resource.data.updatedAt is string;
     }
 
+    function isValidDeliverySessionStatusUpdate() {
+      return resource.data.estado in ['ASIGNADA', 'EN_CURSO', 'LIQUIDADA']
+        && request.resource.data.estado in ['ASIGNADA', 'EN_CURSO', 'LIQUIDADA']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'estado',
+          'updatedAt'
+        ])
+        && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is string);
+    }
+
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
@@ -112,6 +122,13 @@ service cloud.firestore {
         || (isPicker() && isValidPickerOrderUpdate())
         || (isDelivery() && isValidDeliveryOrderUpdate());
       allow delete: if isAdmin() || isFacturation();
+    }
+
+    match /delivery_sessions/{sessionId} {
+      allow read: if isAuthenticated() && (isAdmin() || isDelivery());
+      allow create: if isAdmin();
+      allow update: if isAdmin() || (isDelivery() && isValidDeliverySessionStatusUpdate());
+      allow delete: if isAdmin();
     }
 
     match /settings/{document=**} {

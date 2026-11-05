@@ -36,7 +36,8 @@ Final directory structure and exports under `shared/` (`index.ts`):
 
 - **`types/`**
   - `types/auth.ts`: `UserRole` (`'admin' | 'facturation' | 'picker' | 'delivery'`), `LoginCredentials`, `UserProfile`, `AuthResult`, `CreateUserData`, `UpdateUserData`, `LoginFormProps`
-  - `types/order.ts`: `Order`, `OrderItem`, `OrderStatus`, `ItemPickingStatus`, `OrderItemPickingPatch`, `PickingAuditLog`, `PickingAuditUser`, `OrderSellerEditAudit`, `ClientOrderData`, `OrderReliquidationSummary`, `UpdateOrderFacturationPayload`, `CreateOrderData`
+  - `types/order.ts`: `Order` (including optional `deliverySessionId` and `deliverySessionCode`), `OrderItem`, `OrderStatus`, `ItemPickingStatus`, `OrderItemPickingPatch`, `PickingAuditLog`, `PickingAuditUser`, `OrderSellerEditAudit`, `ClientOrderData`, `OrderReliquidationSummary`, `UpdateOrderFacturationPayload`, `CreateOrderData`
+  - `types/delivery-session.ts`: `DeliverySessionStatus` (`'ASIGNADA' | 'EN_CURSO' | 'LIQUIDADA'`), `DeliveryCrewMember`, `DeliverySession`, `CreateDeliverySessionPayload`
 - **`schemas/`**
   - `schemas/auth.schema.ts`: `loginSchema`, `LoginFormInput`, `LoginFormOutput`, `LoginFormValues`
   - `schemas/user.schema.ts`: `createUserSchema`, `editUserSchema`, `CreateUserFormInput`, `CreateUserFormOutput`, `EditUserFormInput`, `EditUserFormOutput`, `UserFormValues`
@@ -49,6 +50,7 @@ Final directory structure and exports under `shared/` (`index.ts`):
   - `services/firebase.ts`: Single Firebase SDK instance (`app`, `db`, `auth`, `firebaseConfig`)
   - `services/auth.service.ts`: `ALL_USER_ROLES`, `loginWithEmailAndPassword`, `getCurrentUserProfile`, `logout`
   - `services/users.service.ts`: Admin user CRUD and real-time subscriptions (`createUser`, `updateUser`, `deleteUser`, `getUsers`, `subscribeUsers`)
+  - `services/delivery-sessions.service.ts`: Logistics delivery session management (`DELIVERY_SESSIONS_COLLECTION`, `subscribeToReadyOrders`, `createDeliverySession`, `subscribeToActiveSessions`, `subscribeToUserDeliverySession`)
   - `services/orders.service.ts`: Barrel re-export of `services/orders/*`
   - `services/orders/`:
     - `orders.helpers.ts`: `ORDERS_COLLECTION`, `mapOrderDoc`, `roundCurrency`, `computePickingProgress`, `buildReliquidationSummary`, `sanitizeOrderItem`, `buildSyncedObsAudit`
@@ -122,11 +124,14 @@ Next.js application (`rutea-delivery/src/`) dedicated to last-mile delivery rout
 - **`app/` (Routes & Protected Layouts)**
   - `app/page.tsx`: Login view consuming `@rutea/shared` `LoginForm` for `'admin'` and `'delivery'` roles (`'admin' -> '/admin'`, `'delivery' -> '/delivery'`).
   - `app/delivery/`: Protected header layout (`layout.tsx`) verifying `'admin'` or `'delivery'` roles, and delivery workspace view (`page.tsx`).
-  - `app/admin/`: Admin layout (`layout.tsx`), delivery overview (`page.tsx`), and shared users management (`users/page.tsx`) consuming `UsersView` directly from `@rutea/shared`.
+  - `app/admin/`: Admin layout (`layout.tsx`), dispatch & route sessions dashboard (`page.tsx` rendering `DispatchDashboard`), and shared users management (`users/page.tsx`) consuming `UsersView` directly from `@rutea/shared`.
 - **`components/`**
-  - `components/admin/`: `Sidebar.tsx` (collapsible sidebar consuming `Tooltip` and `logout` from `@rutea/shared`).
-- **`constants/`**
-  - `constants/navigation.ts`: `ADMIN_NAV_GROUPS`, `NavItem`, `NavGroup`.
+  - `components/admin/`: `Sidebar.tsx` (collapsible sidebar consuming `Tooltip` and `logout` from `@rutea/shared`), and `dispatch/` (`DispatchDashboard.tsx`, `DispatchCityGroupCard.tsx`, `DispatchStickyBottomBar.tsx`, `ActiveSessionsPanel.tsx`, `ReadOnlyInvoiceDetailModal.tsx`, `ReadOnlyInvoiceItemsList.tsx`, `CreateRouteSessionModal.tsx`).
+- **`hooks/`, `constants/`, `types/`, `utils/`**
+  - `hooks/`: `useDispatchDashboard.ts`, `useCreateRouteSession.ts`.
+  - `constants/`: `navigation.ts` (`ADMIN_NAV_GROUPS`), `dispatch.ts` (`DISPATCH_TAB_OPTIONS`, `SESSION_STATUS_META`, `ITEM_PICKING_STATUS_META`).
+  - `types/`: `dispatch.ts` (`DispatchTabMode`, `CityDispatchGroup`, `DispatchSelectionSummary`, `ReadOnlyItemComparisonRow`, `ReadOnlyOrderAuditView`).
+  - `utils/`: `dispatch.ts` (`groupReadyOrdersByCity`, `calculateDispatchSelectionSummary`, `buildReadOnlyOrderAuditView`, `resolveOrderExpectedAmount`, `buildSuggestedRouteName`).
 - **Upcoming Operational Layer (`@rutea/shared` & `rutea-delivery/src/`):**
   - Extend `shared/types/order.ts` and create `shared/services/orders/orders.delivery.service.ts` for subscribing to `'LISTO_PARA_REPARTO'` orders, recording payment methods (`EFECTIVO | TRANSFERENCIA | CREDITO`), logging delivery returns/incidents, and transitioning orders to `'ENTREGADO'`.
   - Maintain strict separation across `app/`, `components/`, `hooks/`, `constants/`, `schemas/`, `types/`, and `utils/`, keeping all `.tsx` files under 180–200 lines and completely decoupled from direct Firestore calls or inline business math.

@@ -97,6 +97,8 @@ export interface Order {
   reliquidation?: OrderReliquidationSummary;
   hasPostPickingAdditions?: boolean;
   lastSellerEdit?: OrderSellerEditAudit;
+  deliverySessionId?: string;
+  deliverySessionCode?: string;
   estado: OrderStatus;
   createdAt: string;
   updatedAt: string;
