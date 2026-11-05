@@ -4,6 +4,7 @@ import {
   getDocs,
   onSnapshot,
   query,
+  updateDoc,
   where,
   writeBatch,
   type Unsubscribe,
@@ -14,6 +15,7 @@ import type {
   CreateDeliverySessionPayload,
   DeliveryCrewMember,
   DeliverySession,
+  DeliverySessionStatus,
 } from "../types/delivery-session";
 import {
   ORDERS_COLLECTION,
@@ -193,4 +195,41 @@ export function subscribeToUserDeliverySession(
     (err) => onError?.(err)
   );
 }
+
+export function subscribeToSessionOrders(
+  sessionId: string,
+  callback: (orders: Order[]) => void,
+  onError?: (error: Error) => void
+): Unsubscribe {
+  const q = query(
+    collection(db, ORDERS_COLLECTION),
+    where("deliverySessionId", "==", sessionId)
+  );
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const orders = snapshot.docs
+        .map((d) => mapOrderDoc(d.id, d.data()))
+        .sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      callback(orders);
+    },
+    (err) => onError?.(err)
+  );
+}
+
+export async function updateDeliverySessionStatus(
+  sessionId: string,
+  estado: DeliverySessionStatus
+): Promise<void> {
+  const sessionRef = doc(db, DELIVERY_SESSIONS_COLLECTION, sessionId);
+  await updateDoc(sessionRef, {
+    estado,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
 

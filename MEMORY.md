@@ -25,8 +25,9 @@ An invoice passes through all 3 monorepo modules under a single Firestore docume
 3. **Re-settlement and POS Printing (`rutea-facturation`):**
    - The invoicing clerk accesses `/facturation/invoices`, reviews the **Initial Version vs. Picked Version** comparison, prints the 80mm thermal receipt (`PosReceiptPrint`), and authorizes dispatch by changing the status to `'LISTO_PARA_REPARTO'`.
 
-4. **Delivery and Cash Reconciliation (`rutea-delivery` — Future):**
-   - Delivery personnel will process orders in `'LISTO_PARA_REPARTO'`, filtered by population, record payments (`EFECTIVO`, `TRANSFERENCIA`, `CREDITO`) and returns, and transition orders to `'ENTREGADO'`.
+4. **Dispatch Assignment & Crew Delivery (`rutea-delivery`):**
+   - Logistics administrators in `/admin/dispatch` group `'LISTO_PARA_REPARTO'` orders by population, audit picked vs. original quantities in read-only mode, and create a `delivery_sessions` document (`createDeliverySession`) assigning a crew of delivery personnel (`assignedCrew`), which atomically transitions the selected orders to `estado: 'EN_RUTA'` with `deliverySessionId` and `deliverySessionCode`.
+   - Any member of the assigned crew opening `/delivery` automatically receives the shared route session in real time (`subscribeToUserDeliverySession`), transitions the session to `'EN_CURSO'`, views their crew companions and route progress, and processes the session's invoices (`subscribeToSessionOrders`) grouped by population.
 
 ---
 
@@ -50,7 +51,7 @@ Final directory structure and exports under `shared/` (`index.ts`):
   - `services/firebase.ts`: Single Firebase SDK instance (`app`, `db`, `auth`, `firebaseConfig`)
   - `services/auth.service.ts`: `ALL_USER_ROLES`, `loginWithEmailAndPassword`, `getCurrentUserProfile`, `logout`
   - `services/users.service.ts`: Admin user CRUD and real-time subscriptions (`createUser`, `updateUser`, `deleteUser`, `getUsers`, `subscribeUsers`)
-  - `services/delivery-sessions.service.ts`: Logistics delivery session management (`DELIVERY_SESSIONS_COLLECTION`, `subscribeToReadyOrders`, `createDeliverySession`, `subscribeToActiveSessions`, `subscribeToUserDeliverySession`)
+  - `services/delivery-sessions.service.ts`: Logistics delivery session management (`DELIVERY_SESSIONS_COLLECTION`, `subscribeToReadyOrders`, `createDeliverySession`, `subscribeToActiveSessions`, `subscribeToUserDeliverySession`, `subscribeToSessionOrders`, `updateDeliverySessionStatus`)
   - `services/orders.service.ts`: Barrel re-export of `services/orders/*`
   - `services/orders/`:
     - `orders.helpers.ts`: `ORDERS_COLLECTION`, `mapOrderDoc`, `roundCurrency`, `computePickingProgress`, `buildReliquidationSummary`, `sanitizeOrderItem`, `buildSyncedObsAudit`
@@ -121,17 +122,18 @@ Next.js application (`rutea-fulfillment/src/`) dedicated to real-time warehouse 
 
 Next.js application (`rutea-delivery/src/`) dedicated to last-mile delivery routes by population, delivery confirmation, collections, cash reconciliation, and logistics administration. It must strictly preserve this layered organization:
 
+- **End-to-End Session Flow (Admin Dispatch -> Crew Workspace):**
+  - **Session Creation (`/admin/dispatch`):** The administrator selects one or more populations with `'LISTO_PARA_REPARTO'` invoices, inspects warehouse reliquidation in read-only mode (`ReadOnlyInvoiceDetailModal`), and assigns a delivery crew (`assignedCrew`) via `CreateRouteSessionModal`. `createDeliverySession` writes a `delivery_sessions` document (`RUTA-YYYYMMDD-XX`) and batch-updates every included order with `deliverySessionId`, `deliverySessionCode`, and `estado: 'EN_RUTA'`.
+  - **Crew Reception (`/delivery`):** When any assigned crew member logs into `/delivery`, `useDeliveryWorkspace` subscribes reactively to their active session via `subscribeToUserDeliverySession(uid)`, automatically promotes `'ASIGNADA'` sessions to `'EN_CURSO'` (`updateDeliverySessionStatus`), and subscribes to the session's exclusive orders (`subscribeToSessionOrders`). All crewmates simultaneously see the same route header, companion avatars (`DeliverySessionHeader`), route progress, and population-grouped touch cards (`AssignedRouteInvoicesList`).
 - **`app/` (Routes & Protected Layouts)**
   - `app/page.tsx`: Login view consuming `@rutea/shared` `LoginForm` for `'admin'` and `'delivery'` roles (`'admin' -> '/admin'`, `'delivery' -> '/delivery'`).
-  - `app/delivery/`: Protected header layout (`layout.tsx`) verifying `'admin'` or `'delivery'` roles, and delivery workspace view (`page.tsx`).
+  - `app/delivery/`: Protected header layout (`layout.tsx`) verifying `'admin'` or `'delivery'` roles, and reactive crew delivery workspace (`page.tsx`).
   - `app/admin/`: Admin layout (`layout.tsx`), delivery operations overview dashboard (`page.tsx`), dispatch & route assignment workspace (`dispatch/page.tsx` rendering `DispatchDashboard`), routes shortcut redirect (`routes/page.tsx`), and shared users management (`users/page.tsx`) consuming `UsersView` directly from `@rutea/shared`.
 - **`components/`**
   - `components/admin/`: `Sidebar.tsx` (collapsible sidebar consuming `Tooltip` and `logout` from `@rutea/shared`), and `dispatch/` (`DispatchDashboard.tsx`, `DispatchCityGroupCard.tsx`, `DispatchStickyBottomBar.tsx`, `ActiveSessionsPanel.tsx`, `ReadOnlyInvoiceDetailModal.tsx`, `ReadOnlyInvoiceItemsList.tsx`, `CreateRouteSessionModal.tsx`).
+  - `components/delivery/`: `DeliverySessionHeader.tsx` (Apple HIG empty state when unassigned, or route header with `EN_CURSO` badge, shared crew avatars/companions summary, and delivery/collection progress), and `AssignedRouteInvoicesList.tsx` (population filter pills and population-grouped touch invoice cards prepared for payment collection, delivery confirmation, and read-only item inspection).
 - **`hooks/`, `constants/`, `types/`, `utils/`**
-  - `hooks/`: `useDispatchDashboard.ts`, `useCreateRouteSession.ts`.
-  - `constants/`: `navigation.ts` (`ADMIN_NAV_GROUPS`), `dispatch.ts` (`DISPATCH_TAB_OPTIONS`, `SESSION_STATUS_META`, `ITEM_PICKING_STATUS_META`).
-  - `types/`: `dispatch.ts` (`DispatchTabMode`, `CityDispatchGroup`, `DispatchSelectionSummary`, `ReadOnlyItemComparisonRow`, `ReadOnlyOrderAuditView`).
-  - `utils/`: `dispatch.ts` (`groupReadyOrdersByCity`, `calculateDispatchSelectionSummary`, `buildReadOnlyOrderAuditView`, `resolveOrderExpectedAmount`, `buildSuggestedRouteName`).
-- **Upcoming Operational Layer (`@rutea/shared` & `rutea-delivery/src/`):**
-  - Extend `shared/types/order.ts` and create `shared/services/orders/orders.delivery.service.ts` for subscribing to `'LISTO_PARA_REPARTO'` orders, recording payment methods (`EFECTIVO | TRANSFERENCIA | CREDITO`), logging delivery returns/incidents, and transitioning orders to `'ENTREGADO'`.
-  - Maintain strict separation across `app/`, `components/`, `hooks/`, `constants/`, `schemas/`, `types/`, and `utils/`, keeping all `.tsx` files under 180–200 lines and completely decoupled from direct Firestore calls or inline business math.
+  - `hooks/`: `useDispatchDashboard.ts`, `useCreateRouteSession.ts`, `useDeliveryWorkspace.ts`.
+  - `constants/`: `navigation.ts` (`ADMIN_NAV_GROUPS`), `dispatch.ts` (`DISPATCH_TAB_OPTIONS`, `SESSION_STATUS_META`, `ITEM_PICKING_STATUS_META`), `delivery.ts` (`ALL_ROUTE_CITIES_FILTER`, `DELIVERY_PAYMENT_METHODS`, `ROUTE_ORDER_STATUS_META`).
+  - `types/`: `dispatch.ts` (`DispatchTabMode`, `CityDispatchGroup`, `DispatchSelectionSummary`, `ReadOnlyItemComparisonRow`, `ReadOnlyOrderAuditView`), `delivery.ts` (`DeliveryPaymentMethod`, `DeliveryCrewDisplayMember`, `DeliveryRouteProgress`, `AssignedCityInvoiceGroup`).
+  - `utils/`: `dispatch.ts` (`groupReadyOrdersByCity`, `calculateDispatchSelectionSummary`, `buildReadOnlyOrderAuditView`, `resolveOrderExpectedAmount`, `buildSuggestedRouteName`), `delivery.ts` (`getCrewMemberInitials`, `buildCrewDisplayList`, `formatCompanionsSummary`, `calculateDeliveryRouteProgress`, `groupSessionOrdersByCity`).
